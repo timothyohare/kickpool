@@ -4,49 +4,49 @@ export const FRIENDS: Friend[] = [
   {
     id: 'dan',
     name: 'Dan',
-    colour: '#E63946',
+    colour: '#00843D', // Brazil/Mexico vivid green
     countries: ['MEX', 'BIH', 'BRA', 'EGY', 'IRN', 'CPV'],
   },
   {
     id: 'boris',
     name: 'Boris',
-    colour: '#1565C0',
+    colour: '#E6A817', // Belgium/Colombia amber-gold
     countries: ['RSA', 'BEL', 'NZL', 'NOR', 'COL', 'PAN'],
   },
   {
     id: 'tim',
     name: 'Tim',
-    colour: '#2E7D32',
+    colour: '#1565C0', // France/South Korea royal blue
     countries: ['KOR', 'CZE', 'SCO', 'FRA', 'ARG', 'ALG'],
   },
   {
     id: 'boomer',
     name: 'Boomer',
-    colour: '#E65100',
+    colour: '#E65100', // Canada/Portugal orange
     countries: ['CAN', 'QAT', 'IRQ', 'AUT', 'POR', 'URU'],
   },
   {
     id: 'rob',
     name: 'Rob',
-    colour: '#6A1B9A',
+    colour: '#8E24AA', // Netherlands/Croatia violet-purple
     countries: ['SUI', 'ECU', 'NED', 'UZB', 'CRO', 'GHA'],
   },
   {
     id: 'ben',
     name: 'Ben',
-    colour: '#00695C',
+    colour: '#0097A7', // Morocco/Australia bright teal
     countries: ['MAR', 'PAR', 'AUS', 'SEN', 'JOR', 'COD'],
   },
   {
     id: 'hamish',
     name: 'Hamish',
-    colour: '#C62828',
+    colour: '#C8102E', // Spain/Japan crimson
     countries: ['HAI', 'USA', 'JPN', 'SWE', 'TUN', 'ESP'],
   },
   {
     id: 'jake',
     name: 'Jake',
-    colour: '#37474F',
+    colour: '#455A64', // Germany/England steel
     countries: ['TUR', 'GER', 'CUW', 'CIV', 'KSA', 'ENG'],
   },
 ];

@@ -1,13 +1,13 @@
 import Image from 'next/image';
 import type { FriendScore } from '@/types';
-import { PRIZE_POOL } from '@/lib/data/scoring';
+import { PRIZE_POOL, PRIZE_1, PRIZE_2 } from '@/lib/data/scoring';
 
 interface Props {
   scores: FriendScore[];
 }
 
 const MEDALS = ['🥇', '🥈', '🥉'];
-const PRIZES = [Math.round(PRIZE_POOL * 0.7), Math.round(PRIZE_POOL * 0.3)];
+const PRIZES = [PRIZE_1, PRIZE_2];
 
 export default function Leaderboard({ scores }: Props) {
   return (

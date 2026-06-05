@@ -7,11 +7,17 @@ const predictionCache = new Map<string, { prediction: unknown; at: number }>();
 const CACHE_MS = 5 * 60 * 1000;
 
 export async function POST(request: Request) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json(
+      { error: 'ANTHROPIC_API_KEY not configured — add it in Amplify > Environment variables, then redeploy' },
+      { status: 503 }
+    );
+  }
+
   try {
     const { matchId } = await request.json();
     if (!matchId) return NextResponse.json({ error: 'matchId required' }, { status: 400 });
 
-    // Return cached if fresh
     const cached = predictionCache.get(matchId);
     if (cached && Date.now() - cached.at < CACHE_MS) {
       return NextResponse.json({ prediction: cached.prediction, cached: true });
@@ -25,7 +31,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ prediction, cached: false });
   } catch (err) {
-    console.error('Predict API error:', err);
-    return NextResponse.json({ error: 'Prediction failed' }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('Predict API error:', message);
+    return NextResponse.json({ error: `Prediction failed: ${message}` }, { status: 500 });
   }
 }

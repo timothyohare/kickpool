@@ -15,6 +15,8 @@ export const WINNER_BONUS = 30; // champion = 70 total
 export const PRIZE_POOL = 400;
 export const ENTRIES = 8;
 export const BUY_IN = 50;
+export const PRIZE_1 = 250;
+export const PRIZE_2 = 150;
 
 export function stagePoints(stage: TournamentStage, isWinner = false): number {
   return STAGE_POINTS[stage] + (isWinner ? WINNER_BONUS : 0);
