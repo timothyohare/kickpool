@@ -1,65 +1,114 @@
-import Image from "next/image";
+import { fetchTodaysMatches, fetchStandings } from '@/lib/api/espn';
+import { calculateLeaderboard } from '@/lib/data/scoring';
+import { fetchFixtures } from '@/lib/api/espn';
+import MatchCard from '@/components/matches/MatchCard';
+import Leaderboard from '@/components/leaderboard/Leaderboard';
+import Link from 'next/link';
+import { matchDayLabel } from '@/lib/utils/time';
 
-export default function Home() {
+export const revalidate = 60;
+
+export default async function HomePage() {
+  const [todayMatches, allMatches, standings] = await Promise.all([
+    fetchTodaysMatches(),
+    fetchFixtures(),
+    fetchStandings(),
+  ]);
+
+  const leaderboard = calculateLeaderboard(allMatches);
+  const topThree = leaderboard.slice(0, 3);
+
+  // Group today's matches by date label
+  const upcoming = todayMatches.slice(0, 6);
+
+  // Next matches if nothing today
+  const nextMatches = upcoming.length === 0
+    ? allMatches.filter((m) => m.status === 'STATUS_SCHEDULED').slice(0, 4)
+    : upcoming;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="space-y-8">
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-4xl">⚽</span>
+          <div>
+            <h1 className="text-2xl font-bold">KickPool</h1>
+            <p className="text-gray-300 text-sm">FIFA World Cup 2026 · Friend Betting Pool</p>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="mt-4 flex gap-4 text-sm">
+          <div className="bg-white/10 rounded-lg px-3 py-2">
+            <div className="text-gray-300 text-xs">Pool</div>
+            <div className="font-bold text-yellow-400">$400</div>
+          </div>
+          <div className="bg-white/10 rounded-lg px-3 py-2">
+            <div className="text-gray-300 text-xs">Players</div>
+            <div className="font-bold">8 friends</div>
+          </div>
+          <div className="bg-white/10 rounded-lg px-3 py-2">
+            <div className="text-gray-300 text-xs">Countries</div>
+            <div className="font-bold">48 teams</div>
+          </div>
+          <div className="bg-white/10 rounded-lg px-3 py-2">
+            <div className="text-gray-300 text-xs">Groups</div>
+            <div className="font-bold">A – L</div>
+          </div>
         </div>
-      </main>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left: Matches */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">
+              {upcoming.length > 0 ? "Today's Matches" : 'Upcoming Matches'}
+            </h2>
+            <Link href="/fixtures" className="text-sm text-blue-600 hover:underline">
+              All fixtures →
+            </Link>
+          </div>
+
+          {nextMatches.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
+              No matches scheduled yet
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {nextMatches.map((match) => (
+                <MatchCard key={match.id} match={match} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right: Leaderboard snapshot */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Pool Standings</h2>
+            <Link href="/leaderboard" className="text-sm text-blue-600 hover:underline">
+              Full table →
+            </Link>
+          </div>
+          <Leaderboard scores={topThree} />
+
+          {/* Groups quick links */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Groups</h3>
+            <div className="grid grid-cols-4 gap-2">
+              {standings.map((s) => (
+                <Link
+                  key={s.group}
+                  href={`/groups#group-${s.group}`}
+                  className="bg-white border border-gray-200 rounded-lg text-center py-2 text-sm font-semibold text-gray-700 hover:border-gray-400 hover:shadow-sm transition-all"
+                >
+                  {s.group}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
