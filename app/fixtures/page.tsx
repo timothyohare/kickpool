@@ -1,5 +1,5 @@
 import { fetchFixtures } from '@/lib/api/espn';
-import MatchCard from '@/components/matches/MatchCard';
+import MatchRow from '@/components/matches/MatchRow';
 import { FRIENDS } from '@/lib/data/friends';
 import { matchDayLabel } from '@/lib/utils/time';
 import type { Match } from '@/types';
@@ -73,19 +73,22 @@ export default async function FixturesPage({
           No fixtures match your filter
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
           {days.map(([day, matches]) => (
             <div key={day}>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                {day}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide">{day}</h2>
+              </div>
+              <div className="divide-y divide-gray-50">
                 {matches.map((m) => (
-                  <MatchCard key={m.id} match={m} />
+                  <MatchRow key={m.id} match={m} />
                 ))}
               </div>
             </div>
           ))}
+          <div className="px-4 py-2.5 text-[11px] text-gray-400 text-center">
+            All times in Australian Eastern Time (AEST)
+          </div>
         </div>
       )}
     </div>

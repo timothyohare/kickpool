@@ -1,5 +1,5 @@
 import type { Match, GroupStanding, StandingRow, MatchStatus, TournamentStage } from '@/types';
-import { getFriendForCountry, normAbbr } from '@/lib/data/friends';
+import { getFriendForCountry, normAbbr, getGroupForCountry } from '@/lib/data/friends';
 
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world';
 const ESPN_V2 = 'https://site.api.espn.com/apis/v2/sports/soccer/fifa.world';
@@ -62,7 +62,9 @@ function parseEvent(event: Record<string, any>): Match {
     : '';
   const stage = inferStage(notesText, comp.type?.text ?? '');
 
-  const group = notesText.match(/Group ([A-L])/i)?.[1]?.toUpperCase();
+  // Derive group from static country→group map (ESPN doesn't embed group in scoreboard notes)
+  const group = getGroupForCountry(homeAbbr) ?? getGroupForCountry(awayAbbr)
+    ?? notesText.match(/Group ([A-L])/i)?.[1]?.toUpperCase();
 
   const venue = (comp.venue ?? {}) as Record<string, unknown>;
 
