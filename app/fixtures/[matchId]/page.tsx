@@ -1,5 +1,6 @@
 import { fetchFixtures } from '@/lib/api/espn';
 import { fetchWCOdds, bestOdds } from '@/lib/api/odds';
+import { getPrediction } from '@/lib/data/predictionStore';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { toAEST } from '@/lib/utils/time';
@@ -18,6 +19,7 @@ export default async function MatchDetailPage({
     fetchFixtures(),
     fetchWCOdds(),
   ]);
+  const savedPrediction = getPrediction(matchId);
 
   const match = allMatches.find((m) => m.id === matchId);
   if (!match) notFound();
@@ -116,6 +118,7 @@ export default async function MatchDetailPage({
           matchId={match.id}
           homeTeam={match.homeTeam.name}
           awayTeam={match.awayTeam.name}
+          initialPrediction={savedPrediction}
         />
       </div>
 

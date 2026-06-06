@@ -7,10 +7,22 @@ interface Props {
   matchId: string;
   homeTeam: string;
   awayTeam: string;
+  initialPrediction?: Prediction | null;
 }
 
-export default function PredictionTrigger({ matchId, homeTeam, awayTeam }: Props) {
-  const [prediction, setPrediction] = useState<Prediction | null>(null);
+function predictedWinner(p: Prediction, homeTeam: string, awayTeam: string): string {
+  if (p.homeWinProbability > p.awayWinProbability && p.homeWinProbability > p.drawProbability) {
+    return `${homeTeam} win (${p.homeWinProbability}%)`;
+  }
+  if (p.awayWinProbability > p.homeWinProbability && p.awayWinProbability > p.drawProbability) {
+    return `${awayTeam} win (${p.awayWinProbability}%)`;
+  }
+  return `Draw (${p.drawProbability}%)`;
+}
+
+export default function PredictionTrigger({ matchId, homeTeam, awayTeam, initialPrediction }: Props) {
+  const [prediction, setPrediction] = useState<Prediction | null>(initialPrediction ?? null);
+  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +38,7 @@ export default function PredictionTrigger({ matchId, homeTeam, awayTeam }: Props
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Prediction failed');
       setPrediction(data.prediction);
+      setExpanded(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
     } finally {
@@ -34,54 +47,65 @@ export default function PredictionTrigger({ matchId, homeTeam, awayTeam }: Props
   }
 
   if (prediction) {
-    const total = prediction.homeWinProbability + prediction.drawProbability + prediction.awayWinProbability;
     return (
-      <div className="space-y-3 bg-blue-50 rounded-lg p-4">
-        {/* Probability bars */}
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <div>
-            <div className="font-bold text-gray-900 text-lg">{prediction.homeWinProbability}%</div>
-            <div className="text-gray-500">{homeTeam}</div>
-            <div className="mt-1 h-1.5 rounded-full bg-gray-200">
-              <div className="h-full rounded-full bg-green-500" style={{ width: `${prediction.homeWinProbability}%` }} />
-            </div>
+      <div className="space-y-2">
+        {/* Compact winner summary always visible */}
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors text-left"
+        >
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-blue-600 font-semibold">🤖 Predicted:</span>
+            <span className="text-gray-900 font-medium">
+              {predictedWinner(prediction, homeTeam, awayTeam)}
+            </span>
+            <span className="text-gray-400 text-xs">
+              {prediction.predictedScore.home}–{prediction.predictedScore.away}
+            </span>
           </div>
-          <div>
-            <div className="font-bold text-gray-900 text-lg">{prediction.drawProbability}%</div>
-            <div className="text-gray-500">Draw</div>
-            <div className="mt-1 h-1.5 rounded-full bg-gray-200">
-              <div className="h-full rounded-full bg-gray-400" style={{ width: `${prediction.drawProbability}%` }} />
+          <span className="text-xs text-gray-400">{expanded ? '▲ hide' : '▼ details'}</span>
+        </button>
+
+        {expanded && (
+          <div className="space-y-3 bg-blue-50 rounded-lg p-4">
+            {/* Probability bars */}
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div>
+                <div className="font-bold text-gray-900 text-lg">{prediction.homeWinProbability}%</div>
+                <div className="text-gray-500">{homeTeam}</div>
+                <div className="mt-1 h-1.5 rounded-full bg-gray-200">
+                  <div className="h-full rounded-full bg-green-500" style={{ width: `${prediction.homeWinProbability}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="font-bold text-gray-900 text-lg">{prediction.drawProbability}%</div>
+                <div className="text-gray-500">Draw</div>
+                <div className="mt-1 h-1.5 rounded-full bg-gray-200">
+                  <div className="h-full rounded-full bg-gray-400" style={{ width: `${prediction.drawProbability}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="font-bold text-gray-900 text-lg">{prediction.awayWinProbability}%</div>
+                <div className="text-gray-500">{awayTeam}</div>
+                <div className="mt-1 h-1.5 rounded-full bg-gray-200">
+                  <div className="h-full rounded-full bg-blue-500" style={{ width: `${prediction.awayWinProbability}%` }} />
+                </div>
+              </div>
             </div>
-          </div>
-          <div>
-            <div className="font-bold text-gray-900 text-lg">{prediction.awayWinProbability}%</div>
-            <div className="text-gray-500">{awayTeam}</div>
-            <div className="mt-1 h-1.5 rounded-full bg-gray-200">
-              <div className="h-full rounded-full bg-blue-500" style={{ width: `${prediction.awayWinProbability}%` }} />
+
+            {/* Narrative */}
+            <p className="text-sm text-gray-700 leading-relaxed">{prediction.narrative}</p>
+
+            {/* Key factors */}
+            <div className="flex flex-wrap gap-1.5">
+              {prediction.keyFactors.map((f) => (
+                <span key={f} className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{f}</span>
+              ))}
             </div>
+
+            <div className="text-xs text-gray-400">🤖 Generated by Claude AI · <span className="capitalize">{prediction.confidence} confidence</span></div>
           </div>
-        </div>
-
-        {/* Predicted score */}
-        <div className="text-center">
-          <span className="text-sm text-gray-600">Predicted: </span>
-          <span className="font-bold text-gray-900">
-            {prediction.predictedScore.home} – {prediction.predictedScore.away}
-          </span>
-          <span className="ml-2 text-xs text-gray-400 capitalize">({prediction.confidence} confidence)</span>
-        </div>
-
-        {/* Narrative */}
-        <p className="text-sm text-gray-700 leading-relaxed">{prediction.narrative}</p>
-
-        {/* Key factors */}
-        <div className="flex flex-wrap gap-1.5">
-          {prediction.keyFactors.map((f) => (
-            <span key={f} className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{f}</span>
-          ))}
-        </div>
-
-        <div className="text-xs text-gray-400">🤖 Generated by Claude AI</div>
+        )}
       </div>
     );
   }

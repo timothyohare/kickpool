@@ -1,5 +1,6 @@
 import { fetchFixtures } from '@/lib/api/espn';
-import type { Match } from '@/types';
+import { getAllPredictions } from '@/lib/data/predictionStore';
+import type { Match, Prediction } from '@/types';
 import PredictionTrigger from '@/components/predictions/PredictionTrigger';
 import { toAEST } from '@/lib/utils/time';
 import Image from 'next/image';
@@ -7,7 +8,10 @@ import Image from 'next/image';
 export const revalidate = 300;
 
 export default async function PredictionsPage() {
-  const allMatches = await fetchFixtures();
+  const [allMatches, cachedPredictions] = await Promise.all([
+    fetchFixtures(),
+    Promise.resolve(getAllPredictions()),
+  ]);
   const upcoming = allMatches
     .filter((m) => m.status === 'STATUS_SCHEDULED')
     .slice(0, 20);
@@ -17,25 +21,29 @@ export default async function PredictionsPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">AI Predictions</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Claude analyses each match and predicts the outcome. Click a match to generate a prediction.
+          Claude analyses each match and predicts the outcome.
         </p>
       </div>
 
       <div className="space-y-3">
         {upcoming.map((match) => (
-          <MatchPredictionRow key={match.id} match={match} />
+          <MatchPredictionRow
+            key={match.id}
+            match={match}
+            initialPrediction={cachedPredictions[match.id] ?? null}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function MatchPredictionRow({ match }: { match: Match }) {
+function MatchPredictionRow({ match, initialPrediction }: { match: Match; initialPrediction: Prediction | null }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
       <div className="flex items-center gap-4">
         {/* Teams */}
-        <div className="flex items-center gap-3 flex-1">
+        <div className="flex items-center gap-3 flex-1 flex-wrap">
           <div className="flex items-center gap-2">
             <Image src={match.homeTeam.logo} alt={match.homeTeam.name} width={28} height={28} className="rounded-full border border-gray-100" unoptimized />
             <span className="font-semibold text-sm text-gray-900">{match.homeTeam.name}</span>
@@ -63,7 +71,12 @@ function MatchPredictionRow({ match }: { match: Match }) {
 
       {/* Prediction trigger */}
       <div className="mt-3">
-        <PredictionTrigger matchId={match.id} homeTeam={match.homeTeam.name} awayTeam={match.awayTeam.name} />
+        <PredictionTrigger
+          matchId={match.id}
+          homeTeam={match.homeTeam.name}
+          awayTeam={match.awayTeam.name}
+          initialPrediction={initialPrediction}
+        />
       </div>
     </div>
   );

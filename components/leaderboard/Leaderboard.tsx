@@ -51,10 +51,9 @@ export default function Leaderboard({ scores }: Props) {
                 )}
               </div>
 
-              {/* Points */}
               <div className="text-right">
-                <div className="font-bold text-gray-900 text-lg">{friend.points}</div>
-                <div className="text-xs text-gray-400">pts</div>
+                <span className="font-bold text-gray-900 text-lg">{friend.points}</span>
+                <span className="text-xs text-gray-400 ml-1">pts</span>
               </div>
             </div>
 

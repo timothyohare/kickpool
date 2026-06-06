@@ -9,6 +9,7 @@ const NAV = [
   { href: '/groups', label: 'Groups' },
   { href: '/leaderboard', label: 'Leaderboard' },
   { href: '/predictions', label: 'Predictions' },
+  { href: '/my-teams', label: 'My Teams' },
 ];
 
 export default function Navbar() {

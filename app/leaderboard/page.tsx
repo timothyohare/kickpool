@@ -1,5 +1,5 @@
 import { fetchFixtures } from '@/lib/api/espn';
-import { calculateLeaderboard, STAGE_POINTS, PRIZE_POOL, BUY_IN, WINNER_BONUS } from '@/lib/data/scoring';
+import { calculateLeaderboard, PRIZE_POOL, BUY_IN } from '@/lib/data/scoring';
 import Leaderboard from '@/components/leaderboard/Leaderboard';
 import Image from 'next/image';
 
@@ -24,34 +24,8 @@ export default async function LeaderboardPage() {
           <Leaderboard scores={scores} />
         </div>
 
-        {/* Points guide */}
+        {/* Countries alive */}
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="bg-gray-900 px-4 py-3">
-              <h3 className="text-white font-bold text-sm">Points System</h3>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {(Object.entries(STAGE_POINTS) as [string, number][]).map(([stage, pts]) => (
-                <div key={stage} className="flex items-center justify-between px-4 py-2.5">
-                  <span className="text-sm text-gray-600">
-                    {stage.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
-                  </span>
-                  <span className="font-bold text-gray-900">{pts} pts</span>
-                </div>
-              ))}
-              <div className="flex items-center justify-between px-4 py-2.5 bg-yellow-50">
-                <span className="text-sm font-semibold text-yellow-800">🏆 World Cup Winner</span>
-                <span className="font-bold text-yellow-800">
-                  {STAGE_POINTS['FINAL'] + WINNER_BONUS} pts
-                </span>
-              </div>
-            </div>
-            <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
-              Points per country · Each friend has 6 countries
-            </div>
-          </div>
-
-          {/* Friend country counts */}
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="bg-gray-900 px-4 py-3">
               <h3 className="text-white font-bold text-sm">Countries Alive</h3>

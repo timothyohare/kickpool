@@ -1,5 +1,6 @@
 import { fetchFixtures } from '@/lib/api/espn';
 import { calculateLeaderboard, PRIZE_POOL, PRIZE_1, PRIZE_2 } from '@/lib/data/scoring';
+import { detectDrama } from '@/lib/data/drama';
 import MatchRow from '@/components/matches/MatchRow';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -17,6 +18,7 @@ const TABS = [
 export default async function HomePage() {
   const allMatches = await fetchFixtures();
   const leaderboard = calculateLeaderboard(allMatches);
+  const drama = detectDrama(allMatches, leaderboard);
 
   // Live matches
   const live = allMatches.filter(
@@ -81,6 +83,34 @@ export default async function HomePage() {
           <div className="space-y-1">
             {live.map((m) => <MatchRow key={m.id} match={m} />)}
           </div>
+        </div>
+      )}
+
+      {/* Drama strip */}
+      {drama.length > 0 && (
+        <div className="space-y-2">
+          {drama.map((event, i) => (
+            <div
+              key={i}
+              className={`rounded-xl border px-4 py-3 ${
+                event.type === 'eliminated'
+                  ? 'bg-red-50 border-red-200'
+                  : 'bg-orange-50 border-orange-200'
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                <span className="text-lg leading-tight">{event.emoji}</span>
+                <div>
+                  <div className={`font-semibold text-sm ${event.type === 'eliminated' ? 'text-red-800' : 'text-orange-800'}`}>
+                    {event.headline}
+                  </div>
+                  <div className={`text-xs mt-0.5 ${event.type === 'eliminated' ? 'text-red-600' : 'text-orange-700'}`}>
+                    {event.detail}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
