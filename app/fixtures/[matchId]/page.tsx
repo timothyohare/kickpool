@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { toAEST } from '@/lib/utils/time';
 import FriendBadge from '@/components/ui/FriendBadge';
 import PredictionTrigger from '@/components/predictions/PredictionTrigger';
+import LiveRefresh from '@/components/ui/LiveRefresh';
 
 export const revalidate = 60;
 
@@ -51,6 +52,7 @@ export default async function MatchDetailPage({
             </span>
           )}
         </div>
+        <LiveRefresh isLive={isLive} intervalSeconds={30} />
 
         {/* Teams + score */}
         <div className="flex items-center justify-between gap-4">
