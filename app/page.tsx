@@ -2,6 +2,7 @@ import { fetchFixtures } from '@/lib/api/espn';
 import { calculateLeaderboard, PRIZE_POOL, PRIZE_1, PRIZE_2 } from '@/lib/data/scoring';
 import { detectDrama } from '@/lib/data/drama';
 import MatchRow from '@/components/matches/MatchRow';
+import LiveRefresh from '@/components/ui/LiveRefresh';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -73,12 +74,15 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* Live strip */}
+      {/* Live strip — LiveRefresh polls router.refresh() every 30s while matches are live */}
       {live.length > 0 && (
         <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">Live Now</span>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">Live Now</span>
+            </div>
+            <LiveRefresh isLive={true} intervalSeconds={30} />
           </div>
           <div className="space-y-1">
             {live.map((m) => <MatchRow key={m.id} match={m} />)}

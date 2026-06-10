@@ -1,5 +1,6 @@
 import { fetchFixtures } from '@/lib/api/espn';
 import MatchRow from '@/components/matches/MatchRow';
+import LiveRefresh from '@/components/ui/LiveRefresh';
 import { FRIENDS } from '@/lib/data/friends';
 import { matchDayLabel } from '@/lib/utils/time';
 import type { Match } from '@/types';
@@ -35,14 +36,20 @@ export default async function FixturesPage({
   });
 
   const days = groupByDay(filtered);
+  const isLive = allMatches.some(
+    (m) => m.status === 'STATUS_IN_PROGRESS' || m.status === 'STATUS_HALFTIME'
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Fixtures</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-gray-900">Fixtures</h1>
+          <LiveRefresh isLive={isLive} intervalSeconds={30} />
+        </div>
 
         {/* Filter bar */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           <a
             href="/fixtures"
             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
