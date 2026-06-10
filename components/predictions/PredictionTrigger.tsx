@@ -1,7 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Prediction } from '@/types';
+
+const CACHE_TTL = 24 * 60 * 60 * 1000;
+
+function loadLocal(matchId: string): Prediction | null {
+  try {
+    const raw = localStorage.getItem(`kp_pred_${matchId}`);
+    if (!raw) return null;
+    const { prediction, at } = JSON.parse(raw) as { prediction: Prediction; at: number };
+    return Date.now() - at < CACHE_TTL ? prediction : null;
+  } catch { return null; }
+}
+
+function saveLocal(matchId: string, prediction: Prediction): void {
+  try { localStorage.setItem(`kp_pred_${matchId}`, JSON.stringify({ prediction, at: Date.now() })); }
+  catch { /* private browsing */ }
+}
 
 interface Props {
   matchId: string;
@@ -26,6 +42,14 @@ export default function PredictionTrigger({ matchId, homeTeam, awayTeam, initial
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Hydrate from localStorage after mount (server-side store is ephemeral per Lambda instance)
+  useEffect(() => {
+    if (!prediction) {
+      const cached = loadLocal(matchId);
+      if (cached) { setPrediction(cached); setExpanded(false); }
+    }
+  }, [matchId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function fetchPrediction() {
     setLoading(true);
     setError(null);
@@ -37,6 +61,7 @@ export default function PredictionTrigger({ matchId, homeTeam, awayTeam, initial
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Prediction failed');
+      saveLocal(matchId, data.prediction);
       setPrediction(data.prediction);
       setExpanded(true);
     } catch (e) {
