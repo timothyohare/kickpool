@@ -4,7 +4,9 @@ import { FRIENDS, normAbbr } from '@/lib/data/friends';
 import type { Match, TournamentStage } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { toAEST } from '@/lib/utils/time';
+import FriendPicker from '@/components/ui/FriendPicker';
 
 export const revalidate = 120;
 
@@ -32,7 +34,9 @@ export default async function MyTeamsPage({
   searchParams: Promise<{ friend?: string }>;
 }) {
   const { friend: friendParam } = await searchParams;
-  const friendId = friendParam ?? 'tim';
+  const cookieStore = await cookies();
+  const savedFriend = cookieStore.get('kickpool_me')?.value;
+  const friendId = friendParam ?? savedFriend ?? 'tim';
 
   const selectedFriend = FRIENDS.find((f) => f.id === friendId) ?? FRIENDS.find((f) => f.id === 'tim')!;
 
@@ -92,23 +96,8 @@ export default async function MyTeamsPage({
           </p>
         </div>
 
-        {/* Friend switcher */}
-        <div className="flex gap-1.5 flex-wrap px-4 py-3">
-          {FRIENDS.map((f) => (
-            <Link
-              key={f.id}
-              href={`/my-teams?friend=${f.id}`}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
-                f.id === selectedFriend.id
-                  ? 'text-white border-transparent'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
-              }`}
-              style={f.id === selectedFriend.id ? { backgroundColor: f.colour, borderColor: f.colour } : {}}
-            >
-              {f.name}
-            </Link>
-          ))}
-        </div>
+        {/* Friend switcher — clicking saves your identity in a cookie */}
+        <FriendPicker friends={FRIENDS} currentFriendId={selectedFriend.id} />
       </div>
 
       {/* Team cards */}
