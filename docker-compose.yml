@@ -1,0 +1,9 @@
+# Local DynamoDB for development (Plan 02). Start with: docker compose up -d
+# Then create tables: node scripts/bootstrap-dynamo.mjs
+services:
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: kickpool-dynamodb
+    ports:
+      - "8000:8000"
+    command: ["-jar", "DynamoDBLocal.jar", "-inMemory", "-sharedDb"]

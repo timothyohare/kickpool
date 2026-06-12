@@ -93,17 +93,3 @@ export interface FriendScore {
     points: number;
   }[];
 }
-
-export interface OddsBookmaker {
-  title: string;
-  homeOdds: number;
-  drawOdds: number;
-  awayOdds: number;
-}
-
-export interface MatchOdds {
-  matchId: string;
-  homeTeam: string;
-  awayTeam: string;
-  bookmakers: OddsBookmaker[];
-}

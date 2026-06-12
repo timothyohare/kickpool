@@ -3,8 +3,6 @@ import { calculateLeaderboard, PRIZE_POOL, BUY_IN } from '@/lib/data/scoring';
 import Leaderboard from '@/components/leaderboard/Leaderboard';
 import Image from 'next/image';
 
-export const revalidate = 120;
-
 export default async function LeaderboardPage() {
   const allMatches = await fetchFixtures();
   const scores = calculateLeaderboard(allMatches);

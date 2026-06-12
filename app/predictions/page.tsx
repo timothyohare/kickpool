@@ -5,12 +5,10 @@ import PredictionTrigger from '@/components/predictions/PredictionTrigger';
 import { toAEST } from '@/lib/utils/time';
 import Image from 'next/image';
 
-export const revalidate = 300;
-
 export default async function PredictionsPage() {
   const [allMatches, cachedPredictions] = await Promise.all([
     fetchFixtures(),
-    Promise.resolve(getAllPredictions()),
+    getAllPredictions(),
   ]);
   const upcoming = allMatches
     .filter((m) => m.status === 'STATUS_SCHEDULED')

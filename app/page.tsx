@@ -6,8 +6,6 @@ import LiveRefresh from '@/components/ui/LiveRefresh';
 import Link from 'next/link';
 import Image from 'next/image';
 
-export const revalidate = 60;
-
 const TABS = [
   { label: 'Overview', href: '/' },
   { label: 'Matches', href: '/fixtures' },

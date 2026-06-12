@@ -5,8 +5,6 @@ import { FRIENDS } from '@/lib/data/friends';
 import { matchDayLabel } from '@/lib/utils/time';
 import type { Match } from '@/types';
 
-export const revalidate = 60;
-
 function groupByDay(matches: Match[]): [string, Match[]][] {
   const map = new Map<string, Match[]>();
   for (const m of matches) {

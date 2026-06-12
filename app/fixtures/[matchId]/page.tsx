@@ -1,5 +1,4 @@
 import { fetchFixtures } from '@/lib/api/espn';
-import { fetchWCOdds, bestOdds } from '@/lib/api/odds';
 import { getPrediction } from '@/lib/data/predictionStore';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -8,30 +7,17 @@ import FriendBadge from '@/components/ui/FriendBadge';
 import PredictionTrigger from '@/components/predictions/PredictionTrigger';
 import LiveRefresh from '@/components/ui/LiveRefresh';
 
-export const revalidate = 60;
-
 export default async function MatchDetailPage({
   params,
 }: {
   params: Promise<{ matchId: string }>;
 }) {
   const { matchId } = await params;
-  const [allMatches, allOdds] = await Promise.all([
-    fetchFixtures(),
-    fetchWCOdds(),
-  ]);
-  const savedPrediction = getPrediction(matchId);
+  const allMatches = await fetchFixtures();
+  const savedPrediction = await getPrediction(matchId);
 
   const match = allMatches.find((m) => m.id === matchId);
   if (!match) notFound();
-
-  // Try to find odds by team name match
-  const matchOdds = allOdds.find(
-    (o) =>
-      o.homeTeam.toLowerCase().includes(match.homeTeam.name.toLowerCase().slice(0, 5)) ||
-      o.awayTeam.toLowerCase().includes(match.awayTeam.name.toLowerCase().slice(0, 5))
-  );
-  const odds = matchOdds ? bestOdds(matchOdds) : null;
 
   const isLive = match.status === 'STATUS_IN_PROGRESS' || match.status === 'STATUS_HALFTIME';
   const isFinished = match.status === 'STATUS_FINAL';
@@ -88,28 +74,6 @@ export default async function MatchDetailPage({
         {/* Venue */}
         <div className="text-center mt-4 text-sm opacity-60">{match.venue}</div>
       </div>
-
-      {/* Odds */}
-      {odds && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <h3 className="font-semibold text-gray-900 mb-3 text-sm">Best Available Odds</h3>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-xs text-gray-500 mb-1">{match.homeTeam.name}</div>
-              <div className="text-2xl font-bold text-gray-900">{odds.home.toFixed(2)}</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-xs text-gray-500 mb-1">Draw</div>
-              <div className="text-2xl font-bold text-gray-900">{odds.draw.toFixed(2)}</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-xs text-gray-500 mb-1">{match.awayTeam.name}</div>
-              <div className="text-2xl font-bold text-gray-900">{odds.away.toFixed(2)}</div>
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 mt-2">Best odds across 10+ bookmakers · For reference only</p>
-        </div>
-      )}
 
       {/* AI Prediction */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">

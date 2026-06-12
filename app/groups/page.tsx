@@ -2,8 +2,6 @@ import { fetchStandings, fetchFixtures } from '@/lib/api/espn';
 import GroupTable from '@/components/groups/GroupTable';
 import MatchCard from '@/components/matches/MatchCard';
 
-export const revalidate = 300;
-
 export default async function GroupsPage() {
   const [standings, allMatches] = await Promise.all([
     fetchStandings(),

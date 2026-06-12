@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const matchId = searchParams.get('matchId');
   if (!matchId) return NextResponse.json({ prediction: null });
-  return NextResponse.json({ prediction: getPrediction(matchId) });
+  return NextResponse.json({ prediction: await getPrediction(matchId) });
 }
 
 export async function POST(request: Request) {
@@ -22,14 +22,14 @@ export async function POST(request: Request) {
     const { matchId } = await request.json();
     if (!matchId) return NextResponse.json({ error: 'matchId required' }, { status: 400 });
 
-    const existing = getPrediction(matchId);
+    const existing = await getPrediction(matchId);
     if (existing) return NextResponse.json({ prediction: existing, cached: true });
 
     const match = await fetchMatchById(matchId);
     if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
 
     const prediction = await generatePrediction(match);
-    setPrediction(matchId, prediction);
+    await setPrediction(matchId, prediction);
 
     return NextResponse.json({ prediction, cached: false });
   } catch (err) {

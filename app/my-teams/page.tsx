@@ -8,8 +8,6 @@ import { cookies } from 'next/headers';
 import { toAEST } from '@/lib/utils/time';
 import FriendPicker from '@/components/ui/FriendPicker';
 
-export const revalidate = 120;
-
 const STAGE_LABEL: Record<TournamentStage, string> = {
   GROUP_STAGE: 'Group Stage',
   ROUND_OF_32: 'Round of 32',

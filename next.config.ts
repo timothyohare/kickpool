@@ -7,7 +7,6 @@ const nextConfig: NextConfig = {
   // routes — the values never reach the client bundle.
   env: {
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? '',
-    THE_ODDS_API_KEY: process.env.THE_ODDS_API_KEY ?? '',
     TAVILY_API_KEY: process.env.TAVILY_API_KEY ?? '',
   },
   images: {

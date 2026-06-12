@@ -6,10 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "start:prod": "next build && next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "capture:fixtures": "node scripts/capture-fixtures.mjs",
+    "dynamo:up": "docker compose up -d",
+    "dynamo:init": "node scripts/bootstrap-dynamo.mjs",
+    "verify:persistence": "node scripts/verify-persistence.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
+    "@aws-sdk/client-dynamodb": "^3.1067.0",
+    "@aws-sdk/lib-dynamodb": "^3.1067.0",
     "@tanstack/react-query": "^5.101.0",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",

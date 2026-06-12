@@ -1,8 +1,21 @@
 import type { Match, GroupStanding, StandingRow, MatchStatus, TournamentStage } from '@/types';
 import { getFriendForCountry, normAbbr, getGroupForCountry } from '@/lib/data/friends';
+import { loadFixture } from '@/lib/api/espn-fixtures';
 
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world';
 const ESPN_V2 = 'https://site.api.espn.com/apis/v2/sports/soccer/fifa.world';
+
+// When USE_FIXTURES=1, serve committed golden JSON instead of the network so local
+// runs and CI are deterministic and offline. Otherwise a normal fetch.
+async function espnFetch(url: string, init?: RequestInit): Promise<Response> {
+  if (process.env.USE_FIXTURES === '1') {
+    return new Response(JSON.stringify(loadFixture(url)), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+  return fetch(url, init);
+}
 
 function teamRef(team: Record<string, unknown>, abbr: string) {
   const friend = getFriendForCountry(abbr);
@@ -87,22 +100,36 @@ function parseEvent(event: Record<string, any>): Match {
 }
 
 export async function fetchFixtures(): Promise<Match[]> {
-  const url = `${ESPN_BASE}/scoreboard?dates=20260611-20260719&limit=200`;
-  const res = await fetch(url, { next: { revalidate: 120 } });
-  if (!res.ok) throw new Error(`ESPN scoreboard error: ${res.status}`);
-  const data = await res.json();
-  return (data.events ?? []).map(parseEvent);
+  // The full tournament schedule changes rarely, so it can be cached. But live
+  // status/scores must be fresh: the dated-range board is slow to reflect
+  // in-progress matches, and a cached fetch can never update faster than its
+  // revalidate window (so router.refresh() alone never showed live scores).
+  // Fix: overlay the no-arg "today" board (authoritative for live, fetched
+  // no-store) on top of the cached schedule.
+  const scheduleUrl = `${ESPN_BASE}/scoreboard?dates=20260611-20260719&limit=200`;
+  const [schedRes, liveRes] = await Promise.all([
+    espnFetch(scheduleUrl, { next: { revalidate: 300 } } as RequestInit),
+    espnFetch(`${ESPN_BASE}/scoreboard`, { cache: 'no-store' } as RequestInit),
+  ]);
+  if (!schedRes.ok) throw new Error(`ESPN scoreboard error: ${schedRes.status}`);
+  const schedule: Match[] = ((await schedRes.json()).events ?? []).map(parseEvent);
+
+  if (!liveRes.ok) return schedule;
+  const live: Match[] = ((await liveRes.json()).events ?? []).map(parseEvent);
+  const liveById = new Map(live.map((m) => [m.id, m]));
+  // Replace scheduled entries with their fresh live/finished counterpart.
+  return schedule.map((m) => liveById.get(m.id) ?? m);
 }
 
 export async function fetchTodaysMatches(): Promise<Match[]> {
-  const res = await fetch(`${ESPN_BASE}/scoreboard`, { next: { revalidate: 60 } });
+  const res = await espnFetch(`${ESPN_BASE}/scoreboard`, { next: { revalidate: 60 } } as RequestInit);
   if (!res.ok) return [];
   const data = await res.json();
   return (data.events ?? []).map(parseEvent);
 }
 
 export async function fetchStandings(): Promise<GroupStanding[]> {
-  const res = await fetch(`${ESPN_V2}/standings`, { next: { revalidate: 300 } });
+  const res = await espnFetch(`${ESPN_V2}/standings`, { next: { revalidate: 300 } } as RequestInit);
   if (!res.ok) throw new Error(`ESPN standings error: ${res.status}`);
   const data = await res.json();
 
@@ -158,7 +185,7 @@ export async function fetchStandings(): Promise<GroupStanding[]> {
 }
 
 export async function fetchMatchById(matchId: string): Promise<Match | null> {
-  const res = await fetch(`${ESPN_BASE}/scoreboard`, { next: { revalidate: 60 } });
+  const res = await espnFetch(`${ESPN_BASE}/scoreboard`, { next: { revalidate: 60 } } as RequestInit);
   if (!res.ok) return null;
   const data = await res.json();
   const event = (data.events ?? []).find((e: Record<string,string>) => String(e.id) === matchId);
