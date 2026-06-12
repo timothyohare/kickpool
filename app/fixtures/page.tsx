@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { fetchFixtures } from '@/lib/api/espn';
 import MatchRow from '@/components/matches/MatchRow';
 import LiveRefresh from '@/components/ui/LiveRefresh';
@@ -48,16 +49,16 @@ export default async function FixturesPage({
 
         {/* Filter bar */}
         <div className="flex flex-wrap gap-2 items-center">
-          <a
+          <Link
             href="/fixtures"
             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
               !params.friend && !params.group ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
             }`}
           >
             All
-          </a>
+          </Link>
           {FRIENDS.map((f) => (
-            <a
+            <Link
               key={f.id}
               href={`/fixtures?friend=${f.id}`}
               className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors text-white`}
@@ -68,7 +69,7 @@ export default async function FixturesPage({
               }}
             >
               {f.name}
-            </a>
+            </Link>
           ))}
         </div>
       </div>

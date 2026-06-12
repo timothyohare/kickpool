@@ -42,11 +42,15 @@ export default function PredictionTrigger({ matchId, homeTeam, awayTeam, initial
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Hydrate from localStorage after mount (server-side store is ephemeral per Lambda instance)
+  // Hydrate from localStorage after mount. This must run post-mount, not via a
+  // lazy initializer: the server renders with no cached prediction, so reading
+  // localStorage during render would cause a hydration mismatch. Reading an
+  // external store here is the sanctioned use of an effect, hence the disable.
   useEffect(() => {
     if (!prediction) {
       const cached = loadLocal(matchId);
-      if (cached) { setPrediction(cached); setExpanded(false); }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (cached) setPrediction(cached);
     }
   }, [matchId]); // eslint-disable-line react-hooks/exhaustive-deps
 

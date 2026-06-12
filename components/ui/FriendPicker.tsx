@@ -8,11 +8,13 @@ interface Props {
   currentFriendId: string;
 }
 
-export default function FriendPicker({ friends, currentFriendId }: Props) {
-  function remember(friendId: string) {
-    document.cookie = `kickpool_me=${friendId}; path=/; max-age=31536000; SameSite=Lax`;
-  }
+// Persist the selected friend for the next visit. Defined at module scope so the
+// cookie write is a plain DOM side-effect, not a mutation inside the component.
+function remember(friendId: string) {
+  document.cookie = `kickpool_me=${friendId}; path=/; max-age=31536000; SameSite=Lax`;
+}
 
+export default function FriendPicker({ friends, currentFriendId }: Props) {
   return (
     <div className="flex gap-1.5 flex-wrap px-4 py-3">
       {friends.map((f) => (
