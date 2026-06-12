@@ -75,15 +75,17 @@ npx tsx scripts/bootstrap-dynamo.ts   # create tables (idempotent)
 npm run dev                           # DYNAMODB_ENDPOINT=http://localhost:8000
 ```
 
-## 5. Production (Amplify) — has a human step
+## 5. Production (Amplify) — DONE
 
-- Create the DynamoDB tables in `ap-southeast-2` (via console, or add CDK later — see
-  "Future" below).
-- **The Amplify SSR compute role needs `dynamodb:GetItem/PutItem/Query/Scan` on the
-  `kickpool-*` tables.** This is an IAM change in the AWS console / Amplify service role —
-  **a human must do this** (Claude cannot modify AWS IAM). Flag clearly before deploy.
-- Set `DYNAMODB_TABLE_PREFIX`, `AWS_REGION` in Amplify env vars. Do **not** set
-  `DYNAMODB_ENDPOINT` in prod (its absence selects real DynamoDB).
+- ✅ `kickpool-predictions` table created in `ap-southeast-2` (PK `pk` / SK `sk`,
+  PAY_PER_REQUEST).
+- ✅ `kickpool-amplify-compute` role (trusts `amplify.amazonaws.com`) with the
+  `kickpool-dynamodb-access` policy (`dynamodb:GetItem/PutItem/Query/Scan` on the table),
+  attached as the Amplify SSR **Compute role**.
+- ✅ All three now managed as IaC — see §7 and `infra/`.
+- Env vars: `DYNAMODB_TABLE_PREFIX` defaults to `kickpool` (optional). `AWS_REGION` is set
+  automatically by the Lambda runtime. Do **not** set `DYNAMODB_ENDPOINT` in prod (its
+  absence selects real DynamoDB).
 
 ## 6. Testing
 
@@ -93,11 +95,14 @@ npm run dev                           # DYNAMODB_ENDPOINT=http://localhost:8000
 - **Integration:** DynamoDB Local — round-trip a prediction, assert it survives a
   simulated "cold start" (new client instance).
 
-## 7. Future (optional, not now)
+## 7. Infrastructure-as-code (DONE)
 
-If infra-as-code is wanted later, add a small **CDK** app under `infra/` to provision the
-four tables + the Amplify role policy. This is where `aws-cdk-lib` would enter the repo.
-Out of scope for this plan unless requested.
+A CDK app now lives under `infra/` (`aws-cdk-lib`) and manages the production resources:
+the `kickpool-predictions` table, the `kickpool-dynamodb-access` managed policy, and the
+`kickpool-amplify-compute` role. The hand-created resources were **imported** into
+`KickpoolStack` (`aws://810429055117/ap-southeast-2`) so they're now under CloudFormation
+management with no drift (`cdk diff` is clean). See `infra/README.md`. The DynamoDB table
+and IAM resources use `RemovalPolicy.RETAIN`, so `cdk destroy` won't delete them.
 
 ## 7b. What was actually implemented (deviations)
 

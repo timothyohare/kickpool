@@ -1,0 +1,5 @@
+{
+  "PredictionsTable49E6614E": { "TableName": "kickpool-predictions" },
+  "DynamoAccessPolicy7E49060B": { "PolicyArn": "arn:aws:iam::810429055117:policy/kickpool-dynamodb-access" },
+  "AmplifyComputeRoleD988057A": { "RoleName": "kickpool-amplify-compute" }
+}
