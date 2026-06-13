@@ -26,7 +26,23 @@ const tables = [
   },
 ];
 
-const existing = new Set((await client.send(new ListTablesCommand({}))).TableNames ?? []);
+// Docker publishes the port before DynamoDB Local is ready to serve, so the
+// first request can hit ECONNRESET/timeout. Poll ListTables until it responds
+// (or give up after ~30s) before doing any real work.
+async function waitForReady(attempts = 30, delayMs = 1000) {
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      return (await client.send(new ListTablesCommand({}))).TableNames ?? [];
+    } catch (err) {
+      if (i === attempts) throw err;
+      console.log(`waiting for DynamoDB Local (${i}/${attempts})...`);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  return [];
+}
+
+const existing = new Set(await waitForReady());
 for (const t of tables) {
   if (existing.has(t.TableName)) {
     console.log(`exists: ${t.TableName}`);
