@@ -163,6 +163,15 @@ describe('fetchStandings (golden standings)', () => {
     });
   });
 
+  it('orders each group by points then goal difference, not ESPN entry order', async () => {
+    const standings = await fetchStandings();
+    const groupA = standings.find((g) => g.group === 'A')!;
+    // The golden fixture lists Group A in ESPN's raw order — MEX, CZE, KOR, RSA —
+    // but KOR (3 pts, +1) must rank above CZE (0 pts, -1). Sorting is ours to do.
+    expect(groupA.table.map((r) => r.team.abbr)).toEqual(['MEX', 'KOR', 'CZE', 'RSA']);
+    expect(groupA.table.map((r) => r.position)).toEqual([1, 2, 3, 4]);
+  });
+
   it('numbers positions sequentially within each group', async () => {
     const standings = await fetchStandings();
     for (const g of standings) {

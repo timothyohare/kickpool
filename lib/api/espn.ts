@@ -145,7 +145,7 @@ export async function fetchStandings(): Promise<GroupStanding[]> {
   return (data.children ?? []).map((group: Record<string, unknown>) => {
     const entries = ((group.standings as Record<string,unknown>)?.entries ?? []) as Record<string, unknown>[];
 
-    const table: StandingRow[] = entries.map((entry, idx) => {
+    const table: StandingRow[] = entries.map((entry) => {
       const teamRaw = (entry.team ?? {}) as Record<string, unknown>;
       const abbr = normAbbr(((teamRaw.abbreviation ?? '') as string).toUpperCase());
       const friend = getFriendForCountry(abbr);
@@ -164,7 +164,7 @@ export async function fetchStandings(): Promise<GroupStanding[]> {
       const ga = stat('pointsAgainst') || stat('goalsConceded') || 0;
 
       return {
-        position: idx + 1,
+        position: 0, // assigned after sorting below
         team: {
           abbr,
           name: (teamRaw.displayName ?? abbr) as string,
@@ -185,6 +185,18 @@ export async function fetchStandings(): Promise<GroupStanding[]> {
         points: stat('points'),
       };
     });
+
+    // ESPN's entries order isn't reliably sorted by our tiebreakers during/just
+    // after live matches (it can list a 0-pt team above a 3-pt one), so order it
+    // ourselves and number positions from the sorted result: points, then goal
+    // difference, then goals for, then name as a stable fallback.
+    table.sort((a, b) =>
+      b.points - a.points ||
+      b.goalDifference - a.goalDifference ||
+      b.goalsFor - a.goalsFor ||
+      a.team.name.localeCompare(b.team.name)
+    );
+    table.forEach((row, idx) => { row.position = idx + 1; });
 
     return {
       group: (group.name as string ?? '').replace('Group ', ''),
