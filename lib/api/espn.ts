@@ -194,9 +194,9 @@ export async function fetchStandings(): Promise<GroupStanding[]> {
 }
 
 export async function fetchMatchById(matchId: string): Promise<Match | null> {
-  const res = await espnFetch(`${ESPN_BASE}/scoreboard`, { next: { revalidate: 60 } } as RequestInit);
-  if (!res.ok) return null;
-  const data = await res.json();
-  const event = (data.events ?? []).find((e: Record<string,string>) => String(e.id) === matchId);
-  return event ? parseEvent(event) : null;
+  // Resolve against the full tournament board (with live overlay), not ESPN's
+  // no-arg "today" slate — that board lags ~a day behind AEST, so it omits both
+  // in-progress and upcoming matches, making them fail with "Match not found".
+  const matches = await fetchFixtures();
+  return matches.find((m) => m.id === matchId) ?? null;
 }

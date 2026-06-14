@@ -75,18 +75,22 @@ export default async function MatchDetailPage({
         <div className="text-center mt-4 text-sm opacity-60">{match.venue}</div>
       </div>
 
-      {/* AI Prediction */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          🤖 AI Match Prediction
-        </h3>
-        <PredictionTrigger
-          matchId={match.id}
-          homeTeam={match.homeTeam.name}
-          awayTeam={match.awayTeam.name}
-          initialPrediction={savedPrediction}
-        />
-      </div>
+      {/* AI Prediction — a pre-match prediction is moot once the game is
+          underway, so hide it while live/halftime. Still shown for finished
+          matches so people can see what the AI would have called. */}
+      {!isLive && (
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            🤖 AI Match Prediction
+          </h3>
+          <PredictionTrigger
+            matchId={match.id}
+            homeTeam={match.homeTeam.name}
+            awayTeam={match.awayTeam.name}
+            initialPrediction={savedPrediction}
+          />
+        </div>
+      )}
 
       {/* Match info */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 text-sm text-gray-600 space-y-2">
