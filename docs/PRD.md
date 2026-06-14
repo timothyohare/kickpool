@@ -223,9 +223,11 @@ For each of the 48 countries:
 - Tournament winner prediction (updated after each match day)
 - "Claude's picks" leaderboard comparison vs actual results
 
-### 5.9 WhatsApp Notifications (P1)
-**DECIDED: WhatsApp group channel. User to provide the WhatsApp group invite link / number.**
+### 5.9 WhatsApp Notifications (Deferred — future implementation)
+**DEFERRED (2026-06-14): not in current scope. The design below is retained for a
+future implementation; no Twilio/WhatsApp code or env config exists today.**
 
+When picked up: WhatsApp group channel — user to provide the group invite link / number.
 Implementation via WhatsApp Business API (Meta Cloud API) or Twilio WhatsApp sender.
 
 Messages sent to the group for:
@@ -311,6 +313,6 @@ Messages sent to the group for:
 
 1. ~~Should there be a public URL or password-protected access?~~ **DECIDED: Public URL, no auth.**
 2. ~~What is the exact points system the group uses?~~ **DECIDED: Exponential system in §5.7. $400 pool (8 × $50), prizes for 1st and 2nd only. Prize split TBC — proposed 70/30 ($280/$120).**
-3. ~~Should the site send WhatsApp/Slack notifications or browser-only?~~ **DECIDED: WhatsApp. User to provide group channel webhook/number. See §5.9.**
+3. ~~Should the site send WhatsApp/Slack notifications or browser-only?~~ **DECIDED: WhatsApp — but DEFERRED (2026-06-14) out of current scope; retained for a future implementation. See §5.9.**
 4. ~~Is there a pool entry fee / prize structure to display?~~ **DECIDED: $50 buy-in, $400 pool, 1st and 2nd place win. Display prize pool banner on leaderboard.**
 5. ~~Do we want to support a "tipping" feature where friends predict each match result?~~ **DECIDED: No. Out of scope.**

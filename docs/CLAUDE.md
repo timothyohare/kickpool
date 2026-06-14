@@ -157,14 +157,11 @@ npm run typecheck    # TypeScript check
 ## Environment Variables
 ```
 ANTHROPIC_API_KEY=
-FOOTBALL_DATA_API_KEY=
-FIFA_API_KEY=          # if available
 NEXT_PUBLIC_SITE_URL=
-TWILIO_ACCOUNT_SID=    # WhatsApp notifications via Twilio
-TWILIO_AUTH_TOKEN=
-TWILIO_WHATSAPP_FROM=  # e.g. whatsapp:+14155238886
-WHATSAPP_GROUP_TO=     # target WhatsApp group number
 ```
+
+> WhatsApp/Twilio notification vars (`TWILIO_*`, `WHATSAPP_GROUP_TO`) were dropped
+> from current scope — see the deferred design in PRD §5.9 and `HUMAN_TODO.md`.
 
 ## Document Index
 - `PRFAQ.md` — Working Backwards PR/FAQ
