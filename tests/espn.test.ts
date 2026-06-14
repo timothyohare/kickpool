@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { fetchFixtures, fetchTodaysMatches, fetchStandings, fetchMatchById } from '@/lib/api/espn';
 
 // Drive the real ESPN parsing logic against the committed golden fixtures
@@ -67,6 +67,55 @@ describe('fetchMatchById', () => {
   it('returns null for an unknown id', async () => {
     const m = await fetchMatchById('does-not-exist');
     expect(m).toBeNull();
+  });
+});
+
+// Regression guard for the live AUS 1–0 TUR (event 760421) incident on 2026-06-14:
+// fetchMatchById used to read ESPN's no-arg "today" board, which lags ~a day behind
+// AEST and so omitted both in-progress and upcoming matches — predictions failed with
+// "Match not found". It must resolve against the dated board (via fetchFixtures).
+// The golden-fixture loader can't model this (it returns one board for every URL), so
+// here we drop USE_FIXTURES and stub fetch to mimic ESPN's quirk directly: the no-arg
+// board (no `dates=` query) is empty/stale, while the dated boards carry the live match.
+describe('fetchMatchById regression: resolves a match absent from the no-arg board', () => {
+  const liveEvent = {
+    id: '760421',
+    date: '2026-06-14T04:00Z',
+    competitions: [{
+      date: '2026-06-14T04:00Z',
+      venue: { fullName: 'Allianz Stadium' },
+      status: { type: { name: 'STATUS_HALFTIME', state: 'in', completed: false, shortDetail: 'HT' } },
+      competitors: [
+        { homeAway: 'home', team: { abbreviation: 'AUS', displayName: 'Australia' }, score: '1' },
+        { homeAway: 'away', team: { abbreviation: 'TUR', displayName: 'Türkiye' }, score: '0' },
+      ],
+    }],
+  };
+
+  let savedUseFixtures: string | undefined;
+  beforeAll(() => {
+    savedUseFixtures = process.env.USE_FIXTURES;
+    delete process.env.USE_FIXTURES; // force the real fetch path so the stub is hit
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      // Only the dated boards (the schedule range + the live ±1-day window) carry
+      // the match; the no-arg "today" board is empty, as ESPN's was during the game.
+      const events = String(url).includes('dates=') ? [liveEvent] : [];
+      return { ok: true, json: async () => ({ events }) };
+    }));
+  });
+  afterAll(() => {
+    vi.unstubAllGlobals();
+    if (savedUseFixtures === undefined) delete process.env.USE_FIXTURES;
+    else process.env.USE_FIXTURES = savedUseFixtures;
+  });
+
+  it('finds the in-progress match the no-arg board omits', async () => {
+    const m = await fetchMatchById('760421');
+    expect(m).not.toBeNull();
+    expect(m!.homeTeam.abbr).toBe('AUS');
+    expect(m!.awayTeam.abbr).toBe('TUR');
+    expect(m!.score).toEqual({ home: 1, away: 0 });
+    expect(m!.status).toBe('STATUS_HALFTIME');
   });
 });
 
