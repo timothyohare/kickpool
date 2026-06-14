@@ -104,12 +104,21 @@ export async function fetchFixtures(): Promise<Match[]> {
   // status/scores must be fresh: the dated-range board is slow to reflect
   // in-progress matches, and a cached fetch can never update faster than its
   // revalidate window (so router.refresh() alone never showed live scores).
-  // Fix: overlay the no-arg "today" board (authoritative for live, fetched
-  // no-store) on top of the cached schedule.
+  // Fix: overlay a fresh, small "current matchday" board on top of the cached
+  // schedule. The no-arg board is NOT usable here — ESPN rolls it over on its
+  // own timezone and it lags ~a day behind AEST, so during a live first half it
+  // returns yesterday's finished matches and the live match never appears.
+  // Instead, request an explicit ±1-day UTC window so today's kickoffs are
+  // always present regardless of the UTC/AEST date boundary.
+  const yyyymmdd = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
+  const now = Date.now();
+  const liveFrom = yyyymmdd(new Date(now - 24 * 60 * 60 * 1000));
+  const liveTo = yyyymmdd(new Date(now + 24 * 60 * 60 * 1000));
   const scheduleUrl = `${ESPN_BASE}/scoreboard?dates=20260611-20260719&limit=200`;
+  const liveUrl = `${ESPN_BASE}/scoreboard?dates=${liveFrom}-${liveTo}&limit=50`;
   const [schedRes, liveRes] = await Promise.all([
     espnFetch(scheduleUrl, { next: { revalidate: 300 } } as RequestInit),
-    espnFetch(`${ESPN_BASE}/scoreboard`, { cache: 'no-store' } as RequestInit),
+    espnFetch(liveUrl, { cache: 'no-store' } as RequestInit),
   ]);
   if (!schedRes.ok) throw new Error(`ESPN scoreboard error: ${schedRes.status}`);
   const schedule: Match[] = ((await schedRes.json()).events ?? []).map(parseEvent);
