@@ -55,3 +55,15 @@ Two goals, one motivating bug:
 
 Each plan has its own **Acceptance Criteria** section. Nothing is executed until these
 plans are reviewed.
+
+## Testing plans (added 2026-06-13)
+
+Follow-on plans for the testing pyramid, after the Vitest `lib/` unit suite landed:
+
+| # | File | Purpose | Depends on |
+|---|------|---------|-----------|
+| 5 | `05-e2e-playwright.md` | Browser E2E for async RSC pages + interactive flows, deterministic via fixtures | 3 (fixtures) |
+| 6 | `06-component-testing-vitest.md` | Component-level render/interaction tests (Vitest + RTL) | — |
+
+These two are **independent of each other** and can be done in either order; both
+are **Draft for review**.
