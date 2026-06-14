@@ -1,5 +1,5 @@
 import { format, toZonedTime } from 'date-fns-tz';
-import { isToday, isTomorrow, isPast } from 'date-fns';
+import { isToday, isTomorrow } from 'date-fns';
 
 const AEST = 'Australia/Sydney';
 

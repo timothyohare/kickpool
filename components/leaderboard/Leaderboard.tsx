@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import type { FriendScore } from '@/types';
-import { PRIZE_POOL, PRIZE_1, PRIZE_2 } from '@/lib/data/scoring';
+import { PRIZE_1, PRIZE_2 } from '@/lib/data/scoring';
 
 interface Props {
   scores: FriendScore[];
