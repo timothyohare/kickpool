@@ -168,12 +168,12 @@ kickpool/
 │   │   └── keys.ts                # Cache key constants
 │   │
 │   ├── claude/
-│   │   ├── client.ts              # Anthropic SDK setup
+│   │   ├── client.ts              # Anthropic SDK setup  (planned — not built)
 │   │   ├── predict.ts             # Match prediction prompts
 │   │   └── agents/
 │   │       ├── match-pulse.ts     # Match Pulse Agent
-│   │       ├── rivalry.ts         # Friend Rivalry Agent
-│   │       └── oracle.ts          # Tournament Oracle Agent
+│   │       ├── rivalry.ts         # Friend Rivalry Agent      (planned — not built)
+│   │       └── oracle.ts          # Tournament Oracle Agent   (planned — not built)
 │   │
 │   └── utils/
 │       ├── time.ts                # AEST conversion utilities

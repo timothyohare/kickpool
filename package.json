@@ -15,6 +15,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:live": "FIXTURE_SCENARIO=live playwright test e2e/live.spec.ts",
+    "perf": "node scripts/perf-check.mjs",
     "capture:fixtures": "node scripts/capture-fixtures.mjs",
     "dynamo:up": "docker compose up -d",
     "dynamo:init": "node scripts/bootstrap-dynamo.mjs",
