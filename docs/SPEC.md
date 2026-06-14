@@ -23,15 +23,10 @@
         ┌──────────────────┼──────────────────┐
         │                  │                  │
    ┌────▼─────┐   ┌────────▼──────┐  ┌───────▼──────┐
-   │DynamoDB  │   │ football-data │  │  Anthropic   │
-   │(cache +  │   │  .org API     │  │  Claude API  │
-   │ state)   │   │               │  │              │
+   │DynamoDB  │   │  ESPN API     │  │  Anthropic   │
+   │(cache +  │   │  (fifa.world) │  │  Claude API  │
+   │ state)   │   │  scores+flags │  │              │
    └──────────┘   └───────────────┘  └──────────────┘
-        │
-   ┌────▼─────────────────────┐
-   │  REST Countries API      │
-   │  Wikipedia API           │
-   └──────────────────────────┘
 ```
 
 ---
@@ -159,15 +154,14 @@ kickpool/
 │
 ├── lib/
 │   ├── data/
-│   │   ├── allocation.ts          # Friend-country mapping (static)
-│   │   ├── friends.ts             # Friend profiles (name, colour)
-│   │   └── scoring.ts             # Points calculation logic
+│   │   ├── friends.ts             # Friend profiles + country→friend/group mapping (static)
+│   │   ├── scoring.ts             # Points / prize calculation logic
+│   │   ├── drama.ts               # Drama / banter helpers
+│   │   └── predictionStore.ts     # Saved-prediction persistence (DynamoDB)
 │   │
 │   ├── api/
-│   │   ├── football-data.ts       # football-data.org client
-│   │   ├── fifa.ts                # FIFA data client
-│   │   ├── countries.ts           # REST Countries API client
-│   │   └── wikipedia.ts           # Wikipedia API for players
+│   │   ├── espn.ts                # ESPN fifa.world client (fixtures, scores, standings)
+│   │   └── espn-fixtures.ts       # Golden-fixture loader (USE_FIXTURES=1)
 │   │
 │   ├── cache/
 │   │   ├── dynamo.ts              # DynamoDB client wrapper
@@ -363,24 +357,16 @@ Attributes: { friendScores[], computedAt }
 
 ### 5.1 Internal API Routes (Next.js)
 
-#### `GET /api/scores`
-Returns all live/today's matches with scores.
-- Cache: 60s (in-play), 300s (scheduled/finished)
-- Source: football-data.org → DynamoDB cache
-
-**Response:**
-```json
-{
-  "matches": [Match],
-  "lastUpdated": "2026-06-15T08:32:00+10:00",
-  "isStale": false
-}
-```
+> **Note — no dedicated `GET /api/scores` endpoint.** The scores route in earlier drafts of
+> this spec was never built (see `docs/plans/04-live-score-fix.md` §4b). Live scores are
+> rendered server-side by `fetchFixtures()` inside the page RSCs and kept fresh by the
+> `LiveRefresh` component (`router.refresh()` every 30s against the `no-store` live overlay).
+> The routes that actually exist are listed below.
 
 #### `GET /api/standings`
 Returns all 12 group tables.
 - Cache: 300s
-- Source: football-data.org
+- Source: ESPN unofficial API (`.../fifa.world/standings`) — see `lib/api/espn.ts`
 
 **Response:**
 ```json
@@ -390,38 +376,70 @@ Returns all 12 group tables.
 }
 ```
 
+**Group ordering / tiebreakers.** ESPN's `standings.entries` array is **not** reliably
+sorted during/just-after live matches (it has listed a 0-pt team above a 3-pt one), so
+`fetchStandings` (`lib/api/espn.ts`) sorts each group itself and assigns `position` from the
+sorted result. The `GroupTable` "top 2 advance" highlight keys off this order, so the sort
+must be correct.
+
+Implemented sort key (descending): **points → goal difference → goals scored → team name**
+(name only as a stable, deterministic fallback).
+
+> **Known limitation — FIFA head-to-head not implemented.** FIFA's official group-stage
+> ranking goes further than the three overall criteria above. The full sequence is:
+> 1. Points in all group matches
+> 2. Goal difference in all group matches
+> 3. Goals scored in all group matches
+>
+> If two or more teams are still level after 1–3, they are ranked by criteria applied **only
+> to the matches between the tied teams**:
+> 4. Points in the head-to-head matches
+> 5. Goal difference in the head-to-head matches
+> 6. Goals scored in the head-to-head matches
+> 7. Fair-play points (cards: yellow −1, indirect red/2nd yellow −3, direct red −4, yellow + direct red −5)
+> 8. Drawing of lots by FIFA
+>
+> We implement **1–3** plus an alphabetical fallback. A rare deadlock where teams are level on
+> points, GD, **and** goals scored would be ordered alphabetically by us but by head-to-head
+> (criterion 4+) by FIFA — so our order could differ from the official one in that narrow case.
+> Revisit only if a real group lands there; it needs the per-match results, not just the
+> aggregate standings row, to compute the head-to-head mini-table.
+
 #### `GET /api/fixtures?group=A&friend=dan&stage=GROUP_STAGE`
 Filtered fixture list.
 
-#### `GET /api/country/[code]`
-Full country detail including players and coach.
-- Cache: 3600s (player data doesn't change during tournament)
+#### `GET /api/predict?matchId=123456`
+Returns the saved prediction for a match (or `{ "prediction": null }` if none).
 
 #### `POST /api/predict`
-Triggers Claude prediction for a match.
+Triggers a Claude prediction for a match.
 ```json
 { "matchId": "123456" }
 ```
-- Idempotent: returns cached prediction if exists
-- Rate limited: 1 request per match per 5 minutes
+- Idempotent: returns the cached prediction if one already exists
+- Requires `ANTHROPIC_API_KEY` (503 if unset); resolves the match via `fetchMatchById` (404 if unknown)
 
 #### `POST /api/agents/match-pulse`
 Webhook triggered by score change → runs Match Pulse Agent.
 
+#### `GET /api/health`
+Liveness/readiness probe (used by `gate-verify` to wait for the app to boot).
+
 ### 5.2 External APIs
 
-#### football-data.org
-- Base URL: `https://api.football-data.org/v4`
-- Auth: `X-Auth-Token` header
-- Key endpoints:
-  - `GET /competitions/WC/matches` — all matches
-  - `GET /competitions/WC/standings` — group tables
-  - `GET /matches/{id}` — single match detail
-  - `GET /teams/{id}` — team roster
+#### ESPN unofficial API (`fifa.world`)
+- Base URLs:
+  - Scoreboard/fixtures: `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world`
+  - Standings: `https://site.api.espn.com/apis/v2/sports/soccer/fifa.world`
+- Auth: **none** (public, unofficial)
+- Key endpoints (see `lib/api/espn.ts`):
+  - `GET /scoreboard?dates=20260611-20260719&limit=200` — full tournament schedule (cached, `revalidate: 300`)
+  - `GET /scoreboard?dates=<yesterday>-<tomorrow>&limit=50` — fresh live overlay (`cache: 'no-store'`), merged onto the schedule by match id
+  - `GET /standings` — the 12 group tables (on the `apis/v2` base)
+- ⚠️ **Do not use the no-arg `GET /scoreboard` for live data.** ESPN rolls that "today" board over on its own timezone, so it lags ~a day behind AEST and omits in-progress/upcoming matches. This caused both the missing live score and the predict "Match not found" bug — see `docs/plans/04-live-score-fix.md` §4c.
 
-#### REST Countries API
-- Base URL: `https://restcountries.com/v3.1`
-- `GET /alpha/{code}` — flag, colours, region
+#### Flags / team crests
+- ESPN team logos: `https://a.espncdn.com/i/teamlogos/countries/500/{abbr}.png` (and the `team.logos` href when present), resolved in `lib/api/espn.ts`. No REST Countries / external flag API is used; country→friend colours come from the static map in `lib/data/friends.ts`.
 
 #### Anthropic Claude API
 - Model: `claude-sonnet-4-6`
@@ -457,7 +475,7 @@ World Cup 2026 runs June–July 2026 (Australian winter), so AEST = UTC+10 with 
 ## 7. Friend-Country Allocation (Static Data)
 
 ```typescript
-// lib/data/allocation.ts
+// lib/data/friends.ts
 export const FRIENDS: Friend[] = [
   { id: 'dan',    name: 'Dan',    colour: '#E63946', countries: ['MEX','BIH','BRA','EGY','IRN','CPV'] },
   { id: 'boris',  name: 'Boris',  colour: '#2196F3', countries: ['RSA','BEL','NZL','NOR','COL','PAN'] },
@@ -587,7 +605,6 @@ frontend:
 
 ```
 ANTHROPIC_API_KEY
-FOOTBALL_DATA_API_KEY
 DYNAMODB_TABLE_PREFIX=kickpool
 AWS_REGION=ap-southeast-2
 NEXT_PUBLIC_SITE_NAME=KickPool
