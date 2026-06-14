@@ -96,6 +96,39 @@ no client state lift — which the pragmatism review explicitly favoured):
 was unnecessary once the data layer was fixed and would have added client state for no
 benefit at this scale. Revisit only if full-page `router.refresh()` proves too heavy.
 
+## 4c. Follow-up correction (2026-06-14) — the no-arg board is NOT authoritative
+
+Observed live during **Australia 1–0 Türkiye** (fixture `760421`): the match page still
+showed kick-off time / "vs" instead of the interim score during the first half, and
+"Get AI Prediction" returned **"Match not found"**. Both traced to the same wrong
+assumption baked into §2a/§4b — that the **no-arg `/scoreboard` board is authoritative for
+today's live status**. It is not: ESPN rolls that board over on its own timezone and it
+**lags ~a day behind AEST**, so mid-afternoon AEST it still returned *yesterday's* finished
+slate and contained **neither** the in-progress match **nor** that day's upcoming fixtures.
+
+Fixes (all in `lib/api/espn.ts`):
+
+- **`fetchFixtures` live overlay** — replaced the no-arg board with an explicit **±1-day UTC
+  `?dates=<from>-<to>` window** (small payload, fetched `no-store`). Today's kickoffs are
+  always present regardless of the UTC/AEST date boundary, so live scores now show **from
+  kickoff**, not just once the cached dated board catches up by halftime.
+- **`fetchMatchById`** — was reading the same no-arg board, which is why the predict API
+  (`POST /api/predict` → `fetchMatchById`) 404'd for live *and* scheduled matches. Now
+  resolves against `fetchFixtures()` (the reliable, live-overlaid, whole-tournament board the
+  pages already use).
+- **Regression guard** — `tests/espn.test.ts` adds a test that drops `USE_FIXTURES` and stubs
+  `fetch` so only `dates=` boards carry the match, pinning that `fetchMatchById` never reverts
+  to the no-arg board. (The golden-fixture loader can't model this — it returns one board for
+  every URL.)
+
+UX (`app/fixtures/[matchId]/page.tsx`): the "Get AI Prediction" block is now hidden while a
+match is live/halftime — a pre-match prediction is moot once underway, and this matches the
+PRD's "pre-match / before kick-off" framing. It's still shown for scheduled and finished
+matches.
+
+> So the §4b sentence "the no-arg **today** board … (authoritative for live status/score)"
+> is **superseded** — the dated window is the live source now.
+
 ## 5. Acceptance criteria
 
 - [ ] Root cause confirmed (which of H1/H2/H3 actually fired) and recorded.

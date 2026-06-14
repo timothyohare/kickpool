@@ -105,12 +105,12 @@ A real-time World Cup 2026 tracking website for a friend group betting pool. Sho
 Dan, Boris, Tim, Boomer, Rob, Ben, Hamish, Jake (8 friends)
 
 ## Tech Stack
-- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
+- **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS
 - **Backend**: AWS Lambda (API routes via Next.js or separate Lambda functions)
 - **Deployment**: AWS Amplify (same pattern as user's other sites)
 - **Database**: DynamoDB (scores, standings, predictions cache)
 - **AI**: Claude API (Anthropic) for predictions and agentic features
-- **Data Sources**: FIFA website scraping / official FIFA API, football-data.org
+- **Data Sources**: ESPN unofficial API (`site.api.espn.com` `fifa.world` scoreboard + standings)
 
 ## Architecture
 - `/app` — Next.js App Router pages
@@ -130,10 +130,11 @@ Dan, Boris, Tim, Boomer, Rob, Ben, Hamish, Jake (8 friends)
 8. Three agentic systems (see AGENTIC_SYSTEMS.md)
 
 ## Data Sources
-- **Live scores**: football-data.org API (free tier available), API-Football, or ESPN unofficial API
-- **Country details**: REST Countries API for flags/colours
-- **Players/coaches**: Wikipedia API or football-data.org
+- **Live scores & standings**: ESPN unofficial API — `site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard` (fixtures/live) and `.../apis/v2/.../fifa.world/standings`. No API key required. See `lib/api/espn.ts`.
+- **Flags / team crests**: ESPN team logos (`a.espncdn.com/i/teamlogos/countries/...`), resolved in `lib/api/espn.ts`.
+- **Friend colours & country→friend mapping**: static map in `lib/data/friends.ts` (not an external API).
 - **Predictions**: Claude claude-sonnet-4-6 via Anthropic SDK
+- _Not yet wired to a data source_: coach / key-player detail on country cards (Key Feature 5) is currently static/aspirational — no REST Countries / Wikipedia / football-data.org integration exists.
 
 ## Time Zone
 All match times displayed in **AEST** (Australia/Sydney, UTC+10 standard / UTC+11 daylight saving).
