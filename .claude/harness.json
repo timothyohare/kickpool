@@ -14,5 +14,24 @@
     "DYNAMODB_ENDPOINT": "http://localhost:8000",
     "DYNAMODB_TABLE_PREFIX": "kickpool",
     "AWS_REGION": "ap-southeast-2"
+  },
+  "perfBoot": "npm run build && npm run start",
+  "perfReady": "http://localhost:3100/api/health",
+  "perfReadyMatch": "\"ok\":true",
+  "perfRoutes": [
+    "/",
+    "/fixtures",
+    "/fixtures/760415",
+    "/leaderboard",
+    "/groups",
+    "/api/standings",
+    "/api/fixtures"
+  ],
+  "perfEnv": {
+    "PORT": "3100",
+    "USE_FIXTURES": "1",
+    "MOCK_LLM": "1",
+    "ANTHROPIC_API_KEY": "perf-mock-key",
+    "DYNAMODB_ENDPOINT": ""
   }
 }

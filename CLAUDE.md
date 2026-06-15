@@ -14,12 +14,17 @@ Do not claim a feature works until `gate-verify` is green.
 
 ## Performance check (on-demand)
 
-- `npm run perf` — deterministic latency check. Builds, boots `next start` against the
-  golden fixtures (`USE_FIXTURES=1`, in-memory prediction store, **no network**), and
-  measures p50/p95 for the key routes, soft-gating against `perf-baseline.json` (fails only
-  if a route's p95 exceeds `baseline×1.5 + 10ms`). Because it uses fixtures, it isolates
-  *our* code cost (parse, live-overlay merge, group sort, RSC render) — it deliberately does
-  **not** measure real ESPN network time, which is non-deterministic. Refresh the baseline
-  after an intended change with `npm run perf -- --update`.
+- `node ~/.claude/bin/gate-perf.mjs` (alias: `npm run perf`) — the harness perf gate. Driven
+  by the `perf*` keys in `.claude/harness.json`: it builds, boots `next start` against the
+  golden fixtures (`USE_FIXTURES=1`, in-memory prediction store, **no network**, port 3100),
+  measures p50/p95 for the key routes, and soft-gates the **median** against
+  `perf-baseline.json` (fails only if a route's p50 exceeds `baseline×1.5 + 10ms`; p95 is
+  shown but not gated, since the tail is noisy on a dev machine). Because it uses fixtures, it
+  isolates *our* code cost (parse, live-overlay merge, group sort, RSC render) — it
+  deliberately does **not** measure real ESPN network time (non-deterministic; that's left to
+  production observability). Refresh the baseline after an intended change with
+  `node ~/.claude/bin/gate-perf.mjs --update`.
 - Not wired into the Stop hook or `gate-verify` (perf on a dev machine is noisy and it needs
-  its own fixtured boot) — run it when you suspect a latency regression.
+  its own fixtured boot) — run it when you suspect a latency regression. If the whole table
+  rises uniformly, that's machine load, not a regression.
+- See `~/.claude/HARNESS.md` for the generic gate and how to add it to other projects.
