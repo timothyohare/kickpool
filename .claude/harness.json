@@ -20,6 +20,7 @@
   "perfReadyMatch": "\"ok\":true",
   "perfRoutes": [
     "/",
+    "/bracket",
     "/fixtures",
     "/fixtures/760415",
     "/leaderboard",
