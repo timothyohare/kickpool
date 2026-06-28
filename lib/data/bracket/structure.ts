@@ -92,6 +92,27 @@ export function feederLabel(childMatch: number, takes: 'W' | 'L'): string {
   return `${prefix} ${takes}${ordinalInRound(childMatch)}`;
 }
 
+// Fixed 2026 knockout kickoff times (match number → UTC ISO). The schedule is set in advance,
+// so cards can show "when does my team play" before ESPN publishes the per-match fixture. Source:
+// ESPN's published bracket times (Australian Eastern, UTC+10 in Jun/Jul 2026) converted to UTC.
+// A real ESPN fixture, once available, overrides this in the builder (it's the live source of truth).
+export const KNOCKOUT_DATES: Record<number, string> = {
+  // Round of 32
+  73: '2026-06-28T19:00:00Z', 74: '2026-06-29T20:30:00Z', 75: '2026-06-30T01:00:00Z', 76: '2026-06-29T17:00:00Z',
+  77: '2026-06-30T21:00:00Z', 78: '2026-06-30T17:00:00Z', 79: '2026-07-01T01:00:00Z', 80: '2026-07-01T16:00:00Z',
+  81: '2026-07-02T00:00:00Z', 82: '2026-07-01T20:00:00Z', 83: '2026-07-02T23:00:00Z', 84: '2026-07-02T19:00:00Z',
+  85: '2026-07-03T03:00:00Z', 86: '2026-07-03T22:00:00Z', 87: '2026-07-04T01:30:00Z', 88: '2026-07-03T18:00:00Z',
+  // Round of 16
+  89: '2026-07-04T21:00:00Z', 90: '2026-07-04T17:00:00Z', 91: '2026-07-05T20:00:00Z', 92: '2026-07-06T00:00:00Z',
+  93: '2026-07-06T19:00:00Z', 94: '2026-07-07T00:00:00Z', 95: '2026-07-07T16:00:00Z', 96: '2026-07-07T20:00:00Z',
+  // Quarterfinals
+  97: '2026-07-09T20:00:00Z', 98: '2026-07-10T19:00:00Z', 99: '2026-07-11T21:00:00Z', 100: '2026-07-12T01:00:00Z',
+  // Semifinals
+  101: '2026-07-14T19:00:00Z', 102: '2026-07-15T19:00:00Z',
+  // 3rd-place play-off & final
+  103: '2026-07-18T21:00:00Z', 104: '2026-07-19T19:00:00Z',
+};
+
 // Card order within each round so adjacent pairs feed the same next-round match and the
 // connector lines stay clean — taken from ESPN's rendered bracket.
 export const DISPLAY_ORDER: Record<TournamentStage, number[]> = {

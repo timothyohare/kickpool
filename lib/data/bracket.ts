@@ -6,7 +6,7 @@
 // provisionally until the group is mathematically over), best-third slots resolve once all 12
 // groups finish (Annex C), and knockout winners advance up the tree as ESPN posts final scores.
 import type { GroupStanding, Match, StandingRow, TeamRef, TournamentStage } from '@/types';
-import { R32, TREE, DISPLAY_ORDER, feederLabel, type Slot } from './bracket/structure';
+import { R32, TREE, DISPLAY_ORDER, KNOCKOUT_DATES, feederLabel, type Slot } from './bracket/structure';
 import { ANNEX_C, THIRD_CANDIDATES } from './bracket/annex-c';
 
 export type BracketSlot =
@@ -20,6 +20,8 @@ export interface BracketMatch {
   away: BracketSlot;
   /** The ESPN fixture, when both teams are known and it exists in the schedule. */
   match?: Match;
+  /** Kickoff time (UTC ISO): the live fixture's when known, else the fixed 2026 schedule. */
+  kickoff?: string;
   /** Abbr of the team that advances, when the match has finished with a decisive score. */
   winnerAbbr?: string;
 }
@@ -144,6 +146,7 @@ export function buildBracket(standings: GroupStanding[], knockout: Match[]): Bra
         bm.winnerAbbr = decisiveWinner(fixture);
       }
     }
+    bm.kickoff = bm.match?.utcDate ?? KNOCKOUT_DATES[matchNo];
     built[matchNo] = bm;
     return bm;
   };

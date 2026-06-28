@@ -58,6 +58,9 @@ describe('buildBracket', () => {
     expect(label(m74.home)).toBe('1E');
     expect(label(m74.away)).toBe('3RD A/B/C/D/F');
 
+    // Even an undecided match shows its fixed kickoff time from the 2026 schedule.
+    expect(m73.kickoff).toBe('2026-06-28T19:00:00Z');
+
     const fin = matchNo(b, 104);
     expect(label(fin.home)).toBe('SF W1');
     expect(label(fin.away)).toBe('SF W2');
@@ -111,6 +114,8 @@ describe('buildBracket', () => {
     const m73 = matchNo(b, 73);
     expect(m73.winnerAbbr).toBe('RSA');
     expect(m73.match).toBeDefined();
+    // A real fixture's date overrides the static schedule.
+    expect(m73.kickoff).toBe('2026-06-11T19:00Z');
 
     // TREE: M90 takes the winners of M73 and M75 → its home slot is now RSA.
     const m90 = matchNo(b, 90);

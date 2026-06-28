@@ -116,10 +116,6 @@ export default function BracketMatchCard({ match, highlightFriendId }: Props) {
           </span>
         ) : finished ? (
           <span className="text-[10px] font-semibold text-gray-400">FT</span>
-        ) : fixture ? (
-          <span className="text-[10px] text-gray-400">
-            {toAESTDate(fixture.utcDate)} · {toAESTTime(fixture.utcDate)}
-          </span>
         ) : null}
       </div>
       <SlotRow
@@ -136,6 +132,11 @@ export default function BracketMatchCard({ match, highlightFriendId }: Props) {
         decided={decided}
         highlightFriendId={highlightFriendId}
       />
+      {!live && !finished && match.kickoff && (
+        <div className="px-3 py-1 text-center text-[10px] font-medium text-gray-500 bg-gray-50/60">
+          {toAESTDate(match.kickoff)} · {toAESTTime(match.kickoff)}
+        </div>
+      )}
     </div>
   );
 
