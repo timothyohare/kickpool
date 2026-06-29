@@ -1,6 +1,7 @@
 import { fetchFixtures } from '@/lib/api/espn';
 import { calculateLeaderboard, PRIZE_POOL, PRIZE_1, PRIZE_2 } from '@/lib/data/scoring';
-import { detectDrama } from '@/lib/data/drama';
+import { detectDrama, recentDecisiveFriendClashes, type DramaEvent } from '@/lib/data/drama';
+import { warmSledges } from '@/lib/data/sledge';
 import MatchRow from '@/components/matches/MatchRow';
 import LiveRefresh from '@/components/ui/LiveRefresh';
 import Link from 'next/link';
@@ -14,10 +15,35 @@ const TABS = [
   { label: 'Predictions', href: '/predictions' },
 ];
 
+// One drama notice — a pre-game grudge/clash (orange) or a post-game sledge (blue).
+function DramaItem({ event }: { event: DramaEvent }) {
+  const sledge = event.type === 'sledge';
+  const tone = sledge
+    ? { box: 'bg-blue-50 border-blue-200', head: 'text-blue-900', body: 'text-blue-700' }
+    : { box: 'bg-orange-50 border-orange-200', head: 'text-orange-800', body: 'text-orange-700' };
+  return (
+    <div className={`rounded-xl border px-4 py-3 ${tone.box}`}>
+      <div className="flex items-start gap-2">
+        <span className="text-lg leading-tight">{event.emoji}</span>
+        <div>
+          <div className={`font-semibold text-sm ${tone.head}`}>{event.headline}</div>
+          <div className={`text-xs mt-0.5 ${tone.body}`}>{event.detail}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function HomePage() {
   const allMatches = await fetchFixtures();
   const leaderboard = calculateLeaderboard(allMatches);
-  const drama = detectDrama(allMatches, leaderboard);
+  const now = new Date();
+  // Warm the (Claude-generated) sledge cache for recent friend-vs-friend results, then build the
+  // strip. Generation is cached per match, so this is a no-op once a result's sledge exists.
+  const sledges = await warmSledges(recentDecisiveFriendClashes(allMatches, leaderboard, now));
+  const drama = detectDrama(allMatches, leaderboard, now, sledges);
+  const results = drama.filter((e) => e.window === 'post');
+  const comingUp = drama.filter((e) => e.window === 'pre');
 
   // Live matches
   const live = allMatches.filter(
@@ -88,31 +114,21 @@ export default async function HomePage() {
         </div>
       )}
 
-      {/* Drama strip */}
-      {drama.length > 0 && (
-        <div className="space-y-2">
-          {drama.map((event, i) => (
-            <div
-              key={i}
-              className={`rounded-xl border px-4 py-3 ${
-                event.type === 'eliminated'
-                  ? 'bg-red-50 border-red-200'
-                  : 'bg-orange-50 border-orange-200'
-              }`}
-            >
-              <div className="flex items-start gap-2">
-                <span className="text-lg leading-tight">{event.emoji}</span>
-                <div>
-                  <div className={`font-semibold text-sm ${event.type === 'eliminated' ? 'text-red-800' : 'text-orange-800'}`}>
-                    {event.headline}
-                  </div>
-                  <div className={`text-xs mt-0.5 ${event.type === 'eliminated' ? 'text-red-600' : 'text-orange-700'}`}>
-                    {event.detail}
-                  </div>
-                </div>
-              </div>
+      {/* Drama strip — fresh results (sledges) then upcoming grudges/clashes */}
+      {(results.length > 0 || comingUp.length > 0) && (
+        <div className="space-y-3">
+          {results.length > 0 && (
+            <div className="space-y-2">
+              <h2 className="px-1 text-xs font-bold text-gray-500 uppercase tracking-wide">Today&apos;s results</h2>
+              {results.map((event) => <DramaItem key={event.matchId} event={event} />)}
             </div>
-          ))}
+          )}
+          {comingUp.length > 0 && (
+            <div className="space-y-2">
+              <h2 className="px-1 text-xs font-bold text-gray-500 uppercase tracking-wide">Coming up</h2>
+              {comingUp.map((event) => <DramaItem key={event.matchId} event={event} />)}
+            </div>
+          )}
         </div>
       )}
 
