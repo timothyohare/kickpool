@@ -1,13 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 import type { Bracket, BracketMatch } from '@/lib/data/bracket';
-import type { TournamentStage } from '@/types';
+import type { OddsSnapshot, TeamOdds, TournamentStage } from '@/types';
 import { FRIENDS } from '@/lib/data/friends';
 import BracketMatchCard from './BracketMatch';
 
+type OddsByAbbr = Record<string, TeamOdds>;
+
 interface Props {
   bracket: Bracket;
+  odds?: OddsSnapshot | null;
 }
 
 // One tab per knockout round; the last tab pairs the final with the 3rd-place play-off (as ESPN does).
@@ -28,12 +32,15 @@ const COLUMNS: { tab: TournamentStage; stages: TournamentStage[] }[] = [
   { tab: 'FINAL', stages: ['FINAL', 'THIRD_PLACE'] },
 ];
 
-export default function BracketView({ bracket }: Props) {
+export default function BracketView({ bracket, odds }: Props) {
   const [activeTab, setActiveTab] = useState<TournamentStage>('ROUND_OF_32');
   const [highlightFriend, setHighlightFriend] = useState<string | null>(null);
 
   const matchesFor = (stage: TournamentStage): BracketMatch[] =>
     bracket.rounds.find((r) => r.stage === stage)?.matches ?? [];
+
+  // Show the reach-final chips only when we have a fresh snapshot; otherwise just note it's paused.
+  const oddsByAbbr: OddsByAbbr | null = odds && !odds.stale ? odds.byAbbr : null;
 
   return (
     <div className="space-y-4">
@@ -102,15 +109,35 @@ export default function BracketView({ bracket }: Props) {
                     final={matchesFor('FINAL')[0]}
                     third={matchesFor('THIRD_PLACE')[0]}
                     highlightFriend={highlightFriend}
+                    oddsByAbbr={oddsByAbbr}
                   />
                 ) : (
-                  <FeederColumn matches={matchesFor(col.stages[0])} highlightFriend={highlightFriend} />
+                  <FeederColumn
+                    matches={matchesFor(col.stages[0])}
+                    highlightFriend={highlightFriend}
+                    oddsByAbbr={oddsByAbbr}
+                  />
                 )}
               </div>
             );
           })}
         </div>
       </div>
+
+      {/* Odds provenance — Monte-Carlo "chance to reach the final", or a note when it's paused. */}
+      {odds && (
+        <p className="text-[11px] text-gray-400 text-center">
+          {oddsByAbbr ? (
+            <>
+              <span className="font-semibold text-gray-500">%</span> = chance to reach the final ·{' '}
+              {odds.sims.toLocaleString()} Monte-Carlo sims · updated{' '}
+              {formatDistanceToNow(new Date(odds.generatedAt), { addSuffix: true })}
+            </>
+          ) : (
+            <>Title odds paused — awaiting a fresh simulation run</>
+          )}
+        </p>
+      )}
     </div>
   );
 }
@@ -120,9 +147,11 @@ export default function BracketView({ bracket }: Props) {
 function FeederColumn({
   matches,
   highlightFriend,
+  oddsByAbbr,
 }: {
   matches: BracketMatch[];
   highlightFriend: string | null;
+  oddsByAbbr: OddsByAbbr | null;
 }) {
   const pairs: BracketMatch[][] = [];
   for (let i = 0; i < matches.length; i += 2) pairs.push(matches.slice(i, i + 2));
@@ -136,7 +165,7 @@ function FeederColumn({
         >
           {pair.map((m) => (
             <div key={m.matchNo} className="flex lg:justify-center">
-              <BracketMatchCard match={m} highlightFriendId={highlightFriend} />
+              <BracketMatchCard match={m} highlightFriendId={highlightFriend} oddsByAbbr={oddsByAbbr} />
             </div>
           ))}
           {/* Connector: bracket joining the pair, plus a stub into the next column (desktop only). */}
@@ -156,21 +185,23 @@ function FinalColumn({
   final,
   third,
   highlightFriend,
+  oddsByAbbr,
 }: {
   final?: BracketMatch;
   third?: BracketMatch;
   highlightFriend: string | null;
+  oddsByAbbr: OddsByAbbr | null;
 }) {
   return (
     <div className="flex flex-col gap-6 lg:h-full lg:justify-center">
       {final && (
         <div className="flex lg:justify-center">
-          <BracketMatchCard match={final} highlightFriendId={highlightFriend} />
+          <BracketMatchCard match={final} highlightFriendId={highlightFriend} oddsByAbbr={oddsByAbbr} />
         </div>
       )}
       {third && (
         <div className="flex lg:justify-center">
-          <BracketMatchCard match={third} highlightFriendId={highlightFriend} />
+          <BracketMatchCard match={third} highlightFriendId={highlightFriend} oddsByAbbr={oddsByAbbr} />
         </div>
       )}
     </div>

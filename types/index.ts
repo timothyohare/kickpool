@@ -79,6 +79,24 @@ export interface Prediction {
   confidence: 'low' | 'medium' | 'high';
 }
 
+// Monte-Carlo tournament odds for one team, sourced from the FifaWorldCupMonteCarloSim project.
+export interface TeamOdds {
+  abbr: string;
+  champion: number;
+  runnerUp: number;
+  reachFinal: number;
+  reachSemi: number;
+  escapeGroup: number;
+}
+
+export interface OddsSnapshot {
+  generatedAt: string;
+  sims: number;
+  /** True when the snapshot is older than the max age — callers hide the numbers. */
+  stale: boolean;
+  byAbbr: Record<string, TeamOdds>;
+}
+
 export interface FriendScore {
   friendId: string;
   friendName: string;

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { fetchFixtures, fetchStandings } from '@/lib/api/espn';
+import { fetchOdds } from '@/lib/api/odds';
 import { buildBracket } from '@/lib/data/bracket';
 import BracketView from '@/components/bracket/Bracket';
 import LiveRefresh from '@/components/ui/LiveRefresh';
@@ -12,7 +13,11 @@ export const metadata: Metadata = {
 
 export default async function BracketPage() {
   // Fresher standings (60s) so a just-finished group reshuffles the R32 qualifier slots promptly.
-  const [allMatches, standings] = await Promise.all([fetchFixtures(), fetchStandings(60)]);
+  const [allMatches, standings, odds] = await Promise.all([
+    fetchFixtures(),
+    fetchStandings(60),
+    fetchOdds(),
+  ]);
 
   // Pass every match to the builder, not just stage-tagged knockouts: ESPN's scoreboard often
   // returns knockout games with no round label (so inferStage marks them GROUP_STAGE). The builder
@@ -34,7 +39,7 @@ export default async function BracketPage() {
         </p>
       </div>
 
-      <BracketView bracket={bracket} />
+      <BracketView bracket={bracket} odds={odds} />
     </div>
   );
 }

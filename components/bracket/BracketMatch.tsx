@@ -1,12 +1,21 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { BracketMatch, BracketSlot } from '@/lib/data/bracket';
+import type { TeamOdds } from '@/types';
 import { isMatchLive, isMatchFinished, toAESTDate, toAESTTime } from '@/lib/utils/time';
 
 interface Props {
   match: BracketMatch;
   /** When set, teams owned by this friend are highlighted so you can trace their path. */
   highlightFriendId?: string | null;
+  /** Monte-Carlo odds keyed by team abbr; null hides the chips. */
+  oddsByAbbr?: Record<string, TeamOdds> | null;
+}
+
+// Reach-the-final probability (0–1) → compact chip text.
+function fmtReach(v: number): string {
+  const pct = v * 100;
+  return pct < 1 ? '<1%' : `${Math.round(pct)}%`;
 }
 
 // Neutral crest for an undecided slot (mirrors ESPN's grey shield).
@@ -27,12 +36,14 @@ function SlotRow({
   isWinner,
   decided,
   highlightFriendId,
+  reach,
 }: {
   slot: BracketSlot;
   score: number | null;
   isWinner: boolean;
   decided: boolean;
   highlightFriendId?: string | null;
+  reach: number | null;
 }) {
   if (slot.kind === 'placeholder') {
     return (
@@ -75,6 +86,15 @@ function SlotRow({
       >
         {slot.team.friendName}
       </span>
+      {/* Reach-the-final odds — hidden for an already-eliminated (dimmed) team. */}
+      {reach != null && !dim && (
+        <span
+          className="text-[10px] font-semibold text-gray-400 tabular-nums flex-shrink-0"
+          title="Monte-Carlo chance to reach the final"
+        >
+          {fmtReach(reach)}
+        </span>
+      )}
       {score != null && (
         <span className={`text-sm font-bold tabular-nums w-4 text-right ${dim ? 'text-gray-400' : 'text-gray-900'}`}>
           {score}
@@ -91,7 +111,7 @@ function scoreFor(match: BracketMatch, slot: BracketSlot): number | null {
   return m.homeTeam.abbr === slot.team.abbr ? m.score.home : m.score.away;
 }
 
-export default function BracketMatchCard({ match, highlightFriendId }: Props) {
+export default function BracketMatchCard({ match, highlightFriendId, oddsByAbbr }: Props) {
   const fixture = match.match;
   const live = fixture ? isMatchLive(fixture.status) : false;
   const finished = fixture ? isMatchFinished(fixture.status) : false;
@@ -100,6 +120,8 @@ export default function BracketMatchCard({ match, highlightFriendId }: Props) {
   const decided = !!match.winnerAbbr;
 
   const winner = (s: BracketSlot) => s.kind === 'team' && s.team.abbr === match.winnerAbbr;
+  const reachFor = (s: BracketSlot): number | null =>
+    s.kind === 'team' && oddsByAbbr ? oddsByAbbr[s.team.abbr]?.reachFinal ?? null : null;
 
   const card = (
     <div
@@ -126,6 +148,7 @@ export default function BracketMatchCard({ match, highlightFriendId }: Props) {
         isWinner={winner(match.home)}
         decided={decided}
         highlightFriendId={highlightFriendId}
+        reach={reachFor(match.home)}
       />
       <SlotRow
         slot={match.away}
@@ -133,6 +156,7 @@ export default function BracketMatchCard({ match, highlightFriendId }: Props) {
         isWinner={winner(match.away)}
         decided={decided}
         highlightFriendId={highlightFriendId}
+        reach={reachFor(match.away)}
       />
       {!live && !finished && match.kickoff && (
         <div className="px-3 py-1 text-center text-[10px] font-medium text-gray-500 bg-gray-50/60">
