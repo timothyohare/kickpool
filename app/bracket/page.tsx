@@ -11,11 +11,16 @@ export const metadata: Metadata = {
 };
 
 export default async function BracketPage() {
-  const [allMatches, standings] = await Promise.all([fetchFixtures(), fetchStandings()]);
+  // Fresher standings (60s) so a just-finished group reshuffles the R32 qualifier slots promptly.
+  const [allMatches, standings] = await Promise.all([fetchFixtures(), fetchStandings(60)]);
 
-  const knockout = allMatches.filter((m) => m.stage !== 'GROUP_STAGE');
-  const bracket = buildBracket(standings, knockout);
-  const isLive = knockout.some((m) => isMatchLive(m.status));
+  // Pass every match to the builder, not just stage-tagged knockouts: ESPN's scoreboard often
+  // returns knockout games with no round label (so inferStage marks them GROUP_STAGE). The builder
+  // attaches a fixture only when both resolved slots are that exact cross-group team-pair, so group
+  // matches (always same-group) can never collide — relying on the label would drop real results.
+  const bracket = buildBracket(standings, allMatches);
+  // Poll while ANY game is live (group games decide who fills the bracket), mirroring /fixtures.
+  const isLive = allMatches.some((m) => isMatchLive(m.status));
 
   return (
     <div className="space-y-6">

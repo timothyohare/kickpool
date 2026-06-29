@@ -95,6 +95,8 @@ export default function BracketMatchCard({ match, highlightFriendId }: Props) {
   const fixture = match.match;
   const live = fixture ? isMatchLive(fixture.status) : false;
   const finished = fixture ? isMatchFinished(fixture.status) : false;
+  // ESPN returns 0–0 for not-yet-played fixtures, so only surface a scoreline once it's meaningful.
+  const hasScore = live || finished;
   const decided = !!match.winnerAbbr;
 
   const winner = (s: BracketSlot) => s.kind === 'team' && s.team.abbr === match.winnerAbbr;
@@ -120,14 +122,14 @@ export default function BracketMatchCard({ match, highlightFriendId }: Props) {
       </div>
       <SlotRow
         slot={match.home}
-        score={scoreFor(match, match.home)}
+        score={hasScore ? scoreFor(match, match.home) : null}
         isWinner={winner(match.home)}
         decided={decided}
         highlightFriendId={highlightFriendId}
       />
       <SlotRow
         slot={match.away}
-        score={scoreFor(match, match.away)}
+        score={hasScore ? scoreFor(match, match.away) : null}
         isWinner={winner(match.away)}
         decided={decided}
         highlightFriendId={highlightFriendId}

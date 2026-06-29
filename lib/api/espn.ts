@@ -137,8 +137,8 @@ export async function fetchTodaysMatches(): Promise<Match[]> {
   return (data.events ?? []).map(parseEvent);
 }
 
-export async function fetchStandings(): Promise<GroupStanding[]> {
-  const res = await espnFetch(`${ESPN_V2}/standings`, { next: { revalidate: 300 } } as RequestInit);
+export async function fetchStandings(revalidateSeconds = 300): Promise<GroupStanding[]> {
+  const res = await espnFetch(`${ESPN_V2}/standings`, { next: { revalidate: revalidateSeconds } } as RequestInit);
   if (!res.ok) throw new Error(`ESPN standings error: ${res.status}`);
   const data = await res.json();
 

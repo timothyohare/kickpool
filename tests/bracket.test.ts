@@ -105,11 +105,14 @@ describe('buildBracket', () => {
     if (m73.home.kind === 'team') expect(m73.home.team.friendName).toBe('Boris');
   });
 
-  it('advances a knockout winner into the next round once its score is final', () => {
+  it('advances a knockout winner even when ESPN mislabels the tie as GROUP_STAGE', () => {
     const groups = allComplete();
-    // M73 resolves to RSA (runner A) vs BIH (runner B); play it out 2–0 to RSA.
-    const knockout = [final('RSA', 2, 'BIH', 0, 'ROUND_OF_32')];
-    const b = buildBracket(groups, knockout);
+    // M73 resolves to RSA (runner A) vs BIH (runner B); play it 2–0 to RSA. ESPN's scoreboard
+    // returns knockout games with no round label, so inferStage tags them GROUP_STAGE — the
+    // builder must still attach + advance by team-pair (regression for the result-not-showing bug).
+    const tie = final('RSA', 2, 'BIH', 0); // default stage === 'GROUP_STAGE'
+    expect(tie.stage).toBe('GROUP_STAGE');
+    const b = buildBracket(groups, [tie]);
 
     const m73 = matchNo(b, 73);
     expect(m73.winnerAbbr).toBe('RSA');
