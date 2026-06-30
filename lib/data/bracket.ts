@@ -8,6 +8,7 @@
 import type { GroupStanding, Match, StandingRow, TeamRef, TournamentStage } from '@/types';
 import { R32, TREE, DISPLAY_ORDER, KNOCKOUT_DATES, feederLabel, type Slot } from './bracket/structure';
 import { ANNEX_C, THIRD_CANDIDATES } from './bracket/annex-c';
+import { decisiveWinnerAbbr } from './result';
 
 export type BracketSlot =
   | { kind: 'team'; team: TeamRef; provisional: boolean }
@@ -47,14 +48,6 @@ const ROUND_SEQUENCE: TournamentStage[] = [
 /** Order-independent key for a knockout tie between two teams. */
 function pairKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
-}
-
-/** The team that advances from a finished tie, or undefined if unplayed/level (shootout). */
-function decisiveWinner(m: Match): string | undefined {
-  if (m.status !== 'STATUS_FINAL') return undefined;
-  const { home, away } = m.score;
-  if (home == null || away == null || home === away) return undefined;
-  return home > away ? m.homeTeam.abbr : m.awayTeam.abbr;
 }
 
 /** Rank the 12 third-placed teams (no head-to-head): points → GD → goals → group letter. */
@@ -143,7 +136,7 @@ export function buildBracket(standings: GroupStanding[], knockout: Match[]): Bra
       const fixture = fixtureByPair.get(pairKey(home.team.abbr, away.team.abbr));
       if (fixture) {
         bm.match = fixture;
-        bm.winnerAbbr = decisiveWinner(fixture);
+        bm.winnerAbbr = decisiveWinnerAbbr(fixture);
       }
     }
     bm.kickoff = bm.match?.utcDate ?? KNOCKOUT_DATES[matchNo];

@@ -13,6 +13,7 @@ const candidate: SledgeCandidate = {
   loserFriendId: 'boris',
   winnerScore: 1,
   loserScore: 0,
+  penalties: false,
   loserEliminated: true,
 };
 

@@ -38,6 +38,9 @@ function mapStatus(espnStatus: string): MatchStatus {
     'STATUS_HALFTIME': 'STATUS_HALFTIME',
     'STATUS_FULL_TIME': 'STATUS_FINAL',
     'STATUS_FINAL': 'STATUS_FINAL',
+    // Knockout ties decided after extra time or penalties are still finished matches.
+    'STATUS_FINAL_AET': 'STATUS_FINAL',
+    'STATUS_FINAL_PEN': 'STATUS_FINAL',
     'STATUS_POSTPONED': 'STATUS_POSTPONED',
   };
   return map[espnStatus] ?? 'STATUS_SCHEDULED';
@@ -93,6 +96,9 @@ function parseEvent(event: Record<string, any>): Match {
     score: {
       home: home.score != null ? Number(home.score) : null,
       away: away.score != null ? Number(away.score) : null,
+      // Present only for penalty shootouts; lets the knockout bracket advance the real winner.
+      shootoutHome: home.shootoutScore != null ? Number(home.shootoutScore) : null,
+      shootoutAway: away.shootoutScore != null ? Number(away.shootoutScore) : null,
     },
     venue: ((venue.fullName ?? venue.address) ?? 'TBD') as string,
     city: ((venue as Record<string, Record<string,string>>).address?.city ?? '') as string,

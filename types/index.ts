@@ -33,6 +33,9 @@ export interface TeamRef {
 export interface Score {
   home: number | null;
   away: number | null;
+  /** Penalty shootout scores, present only when a knockout tie was decided on penalties. */
+  shootoutHome?: number | null;
+  shootoutAway?: number | null;
 }
 
 export interface Match {

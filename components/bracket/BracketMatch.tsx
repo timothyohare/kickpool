@@ -37,6 +37,7 @@ function SlotRow({
   decided,
   highlightFriendId,
   reach,
+  shootout,
 }: {
   slot: BracketSlot;
   score: number | null;
@@ -44,6 +45,7 @@ function SlotRow({
   decided: boolean;
   highlightFriendId?: string | null;
   reach: number | null;
+  shootout: number | null;
 }) {
   if (slot.kind === 'placeholder') {
     return (
@@ -96,8 +98,9 @@ function SlotRow({
         </span>
       )}
       {score != null && (
-        <span className={`text-sm font-bold tabular-nums w-4 text-right ${dim ? 'text-gray-400' : 'text-gray-900'}`}>
+        <span className={`text-sm font-bold tabular-nums text-right flex-shrink-0 ${dim ? 'text-gray-400' : 'text-gray-900'}`}>
           {score}
+          {shootout != null && <span className="font-normal text-gray-400"> ({shootout})</span>}
         </span>
       )}
     </div>
@@ -111,6 +114,14 @@ function scoreFor(match: BracketMatch, slot: BracketSlot): number | null {
   return m.homeTeam.abbr === slot.team.abbr ? m.score.home : m.score.away;
 }
 
+// Penalty shootout score for a team slot, when the tie was decided on penalties.
+function shootoutFor(match: BracketMatch, slot: BracketSlot): number | null {
+  if (slot.kind !== 'team' || !match.match) return null;
+  const m = match.match;
+  if (m.score.shootoutHome == null || m.score.shootoutAway == null) return null;
+  return m.homeTeam.abbr === slot.team.abbr ? m.score.shootoutHome : m.score.shootoutAway;
+}
+
 export default function BracketMatchCard({ match, highlightFriendId, oddsByAbbr }: Props) {
   const fixture = match.match;
   const live = fixture ? isMatchLive(fixture.status) : false;
@@ -118,6 +129,7 @@ export default function BracketMatchCard({ match, highlightFriendId, oddsByAbbr 
   // ESPN returns 0–0 for not-yet-played fixtures, so only surface a scoreline once it's meaningful.
   const hasScore = live || finished;
   const decided = !!match.winnerAbbr;
+  const pens = !!fixture && fixture.score.shootoutHome != null && fixture.score.shootoutAway != null;
 
   const winner = (s: BracketSlot) => s.kind === 'team' && s.team.abbr === match.winnerAbbr;
   const reachFor = (s: BracketSlot): number | null =>
@@ -139,7 +151,7 @@ export default function BracketMatchCard({ match, highlightFriendId, oddsByAbbr 
             {fixture?.minute ?? 'LIVE'}
           </span>
         ) : finished ? (
-          <span className="text-[10px] font-semibold text-gray-400">FT</span>
+          <span className="text-[10px] font-semibold text-gray-400">{pens ? 'FT · Pens' : 'FT'}</span>
         ) : null}
       </div>
       <SlotRow
@@ -149,6 +161,7 @@ export default function BracketMatchCard({ match, highlightFriendId, oddsByAbbr 
         decided={decided}
         highlightFriendId={highlightFriendId}
         reach={reachFor(match.home)}
+        shootout={hasScore ? shootoutFor(match, match.home) : null}
       />
       <SlotRow
         slot={match.away}
@@ -157,6 +170,7 @@ export default function BracketMatchCard({ match, highlightFriendId, oddsByAbbr 
         decided={decided}
         highlightFriendId={highlightFriendId}
         reach={reachFor(match.away)}
+        shootout={hasScore ? shootoutFor(match, match.away) : null}
       />
       {!live && !finished && match.kickoff && (
         <div className="px-3 py-1 text-center text-[10px] font-medium text-gray-500 bg-gray-50/60">

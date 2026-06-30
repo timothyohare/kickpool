@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { detectDrama, recentDecisiveFriendClashes } from '@/lib/data/drama';
 import { calculateLeaderboard } from '@/lib/data/scoring';
-import { match } from './helpers/match';
+import { match, penaltyFinal } from './helpers/match';
 import type { Match } from '@/types';
 
 // Fixed "now" so lifespans are deterministic. hrs(-3) = kicked off 3h ago, hrs(24) = in 24h.
@@ -34,6 +34,14 @@ describe('recentDecisiveFriendClashes', () => {
       scheduled('u1', 'CZE', 'USA', hrs(20)), // Tim's Czechia is still to play
     ];
     expect(recentDecisiveFriendClashes(m, lb(m), NOW)[0].loserEliminated).toBe(false);
+  });
+
+  it('counts a penalty-shootout result as decisive (the Germany–Paraguay case)', () => {
+    // BRA(Dan) 1–1 SCO(Tim), Scotland win 5–4 on pens → Tim beat Dan, flagged as penalties.
+    const m = [{ ...penaltyFinal('BRA', 'SCO', 4, 5), id: 'k1', utcDate: hrs(-3) }];
+    const c = recentDecisiveFriendClashes(m, lb(m), NOW);
+    expect(c).toHaveLength(1);
+    expect(c[0]).toMatchObject({ winnerFriend: 'Tim', loserFriend: 'Dan', penalties: true });
   });
 
   it('ignores draws, same-owner games, and anything older than 24h', () => {

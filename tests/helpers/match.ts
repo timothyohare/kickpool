@@ -25,6 +25,8 @@ interface MatchOverrides {
   away: string;
   homeScore?: number | null;
   awayScore?: number | null;
+  homeShootout?: number | null;
+  awayShootout?: number | null;
   utcDate?: string;
 }
 
@@ -42,6 +44,8 @@ export function match(o: MatchOverrides): Match {
     score: {
       home: o.homeScore ?? null,
       away: o.awayScore ?? null,
+      shootoutHome: o.homeShootout ?? null,
+      shootoutAway: o.awayShootout ?? null,
     },
     venue: 'Test Stadium',
     city: 'Testville',
@@ -51,4 +55,14 @@ export function match(o: MatchOverrides): Match {
 // A finished match with the given scoreline.
 export function final(home: string, homeScore: number, away: string, awayScore: number, stage?: TournamentStage): Match {
   return match({ home, away, homeScore, awayScore, status: 'STATUS_FINAL', stage });
+}
+
+// A finished knockout tie level on goals and decided on penalties.
+export function penaltyFinal(
+  home: string, away: string, homeShoot: number, awayShoot: number, goals = 1, stage: TournamentStage = 'ROUND_OF_32',
+): Match {
+  return match({
+    home, away, homeScore: goals, awayScore: goals,
+    homeShootout: homeShoot, awayShootout: awayShoot, status: 'STATUS_FINAL', stage,
+  });
 }

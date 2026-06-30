@@ -3,7 +3,7 @@ import { buildBracket, type BracketSlot } from '@/lib/data/bracket';
 import { DISPLAY_ORDER } from '@/lib/data/bracket/structure';
 import type { GroupStanding } from '@/types';
 import { groupStanding, standingRow } from './helpers/factories';
-import { final } from './helpers/match';
+import { final, penaltyFinal } from './helpers/match';
 
 // Real 2026 draw (lib/data/friends.ts COUNTRY_GROUP), position order 1..4 as listed.
 const GROUPS: Record<string, [string, string, string, string]> = {
@@ -126,5 +126,18 @@ describe('buildBracket', () => {
     if (m90.home.kind === 'team') expect(m90.home.team.abbr).toBe('RSA');
     // M75 hasn't been played, so M90's away slot is still a placeholder for it.
     expect(label(m90.away)).toBe('RD32 W3');
+  });
+
+  it('advances the penalty-shootout winner when goals are level', () => {
+    const groups = allComplete();
+    // M73 = RSA (runner A) vs BIH (runner B); 1–1, RSA win 5–4 on penalties.
+    const b = buildBracket(groups, [penaltyFinal('RSA', 'BIH', 5, 4)]);
+
+    const m73 = matchNo(b, 73);
+    expect(m73.winnerAbbr).toBe('RSA');
+
+    const m90 = matchNo(b, 90); // RSA advances into the round of 16
+    expect(m90.home).toMatchObject({ kind: 'team', provisional: false });
+    if (m90.home.kind === 'team') expect(m90.home.team.abbr).toBe('RSA');
   });
 });

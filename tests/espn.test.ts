@@ -23,7 +23,7 @@ describe('fetchFixtures (golden scoreboard)', () => {
     expect(m).toBeDefined();
     expect(m.homeTeam.abbr).toBe('MEX');
     expect(m.awayTeam.abbr).toBe('RSA');
-    expect(m.score).toEqual({ home: 2, away: 0 });
+    expect(m.score).toMatchObject({ home: 2, away: 0 });
     expect(m.status).toBe('STATUS_FINAL'); // STATUS_FULL_TIME normalises to FINAL
   });
 
@@ -114,8 +114,50 @@ describe('fetchMatchById regression: resolves a match absent from the no-arg boa
     expect(m).not.toBeNull();
     expect(m!.homeTeam.abbr).toBe('AUS');
     expect(m!.awayTeam.abbr).toBe('TUR');
-    expect(m!.score).toEqual({ home: 1, away: 0 });
+    expect(m!.score).toMatchObject({ home: 1, away: 0 });
     expect(m!.status).toBe('STATUS_HALFTIME');
+  });
+});
+
+// Regression for the penalty-shootout incident (Germany 1–1 Paraguay, 30 Jun 2026): ESPN reports
+// these as STATUS_FINAL_PEN with per-competitor shootoutScore. We previously had no mapping, so the
+// match read as STATUS_SCHEDULED and the winner never advanced. It must parse as FINAL + capture the
+// shootout so the bracket can advance the real winner.
+describe('fetchFixtures parses a penalty shootout (STATUS_FINAL_PEN)', () => {
+  const penEvent = {
+    id: '760489',
+    date: '2026-06-29T20:30Z',
+    competitions: [{
+      date: '2026-06-29T20:30Z',
+      venue: { fullName: 'MetLife Stadium' },
+      status: { type: { name: 'STATUS_FINAL_PEN', state: 'post', completed: true, shortDetail: 'FT-Pens' } },
+      competitors: [
+        { homeAway: 'home', team: { abbreviation: 'GER', displayName: 'Germany' }, score: '1', winner: false, shootoutScore: 3 },
+        { homeAway: 'away', team: { abbreviation: 'PAR', displayName: 'Paraguay' }, score: '1', winner: true, shootoutScore: 4 },
+      ],
+    }],
+  };
+
+  let saved: string | undefined;
+  beforeAll(() => {
+    saved = process.env.USE_FIXTURES;
+    delete process.env.USE_FIXTURES;
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () => ({ events: String(url).includes('dates=') ? [penEvent] : [] }),
+    })));
+  });
+  afterAll(() => {
+    vi.unstubAllGlobals();
+    if (saved === undefined) delete process.env.USE_FIXTURES;
+    else process.env.USE_FIXTURES = saved;
+  });
+
+  it('marks the tie finished and captures the shootout scores', async () => {
+    const m = (await fetchFixtures()).find((x) => x.id === '760489')!;
+    expect(m).toBeDefined();
+    expect(m.status).toBe('STATUS_FINAL'); // STATUS_FINAL_PEN normalises to FINAL
+    expect(m.score).toMatchObject({ home: 1, away: 1, shootoutHome: 3, shootoutAway: 4 });
   });
 });
 

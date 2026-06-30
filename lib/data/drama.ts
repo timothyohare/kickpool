@@ -1,5 +1,6 @@
 import type { Match, FriendScore } from '@/types';
 import { normAbbr } from './friends';
+import { decisiveWinnerAbbr, wentToPenalties } from './result';
 
 // A drama notice is always anchored to a specific match and a time window, so the strip stays
 // live: pre-game notices fall off at kickoff (the match is no longer scheduled) and post-game
@@ -27,6 +28,8 @@ export interface SledgeCandidate {
   loserFriendId: string;
   winnerScore: number;
   loserScore: number;
+  /** True when the tie was settled on penalties (so the sledge can play up the drama). */
+  penalties: boolean;
   /** True when this defeat knocked the losing friend's last remaining team out. */
   loserEliminated: boolean;
 }
@@ -71,11 +74,10 @@ export function recentDecisiveFriendClashes(
     const age = nowMs - at;
     if (age < 0 || age >= POST_WINDOW_MS) continue; // only the last 24h
 
-    const hs = m.score.home ?? 0;
-    const as = m.score.away ?? 0;
-    if (hs === as) continue; // a draw has no winner to crow about
+    const winnerAbbr = decisiveWinnerAbbr(m); // goals, then penalties
+    if (!winnerAbbr) continue; // a true draw (no shootout) has no winner to crow about
 
-    const homeWon = hs > as;
+    const homeWon = normAbbr(m.homeTeam.abbr) === normAbbr(winnerAbbr);
     const winner = homeWon ? m.homeTeam : m.awayTeam;
     const loser = homeWon ? m.awayTeam : m.homeTeam;
     if (
@@ -86,6 +88,8 @@ export function recentDecisiveFriendClashes(
       continue;
     }
 
+    const hs = m.score.home ?? 0;
+    const as = m.score.away ?? 0;
     const loserTeams = byFriend.get(loser.friendId) ?? [];
     const loserEliminated = loserTeams.length > 0 && loserTeams.every((a) => !upcoming.has(a));
 
@@ -100,6 +104,7 @@ export function recentDecisiveFriendClashes(
       loserFriendId: loser.friendId,
       winnerScore: homeWon ? hs : as,
       loserScore: homeWon ? as : hs,
+      penalties: wentToPenalties(m),
       loserEliminated,
     });
   }
@@ -112,12 +117,11 @@ export function recentDecisiveFriendClashes(
 function priorDefeats(allMatches: Match[]): Map<string, { winTeam: string; loseTeam: string }> {
   const beat = new Map<string, { winTeam: string; loseTeam: string }>();
   for (const m of allMatches) {
-    if (m.status !== 'STATUS_FINAL') continue;
-    const hs = m.score.home ?? 0;
-    const as = m.score.away ?? 0;
-    if (hs === as) continue;
-    const winner = hs > as ? m.homeTeam : m.awayTeam;
-    const loser = hs > as ? m.awayTeam : m.homeTeam;
+    const winnerAbbr = decisiveWinnerAbbr(m); // counts shootout wins too
+    if (!winnerAbbr) continue;
+    const homeWon = normAbbr(m.homeTeam.abbr) === normAbbr(winnerAbbr);
+    const winner = homeWon ? m.homeTeam : m.awayTeam;
+    const loser = homeWon ? m.awayTeam : m.homeTeam;
     if (winner.friendId !== loser.friendId && winner.friendId !== 'unknown' && loser.friendId !== 'unknown') {
       const key = `${winner.friendId}:${loser.friendId}`;
       if (!beat.has(key)) beat.set(key, { winTeam: winner.name, loseTeam: loser.name });
@@ -180,12 +184,14 @@ function postGameEvents(
   for (const c of candidates) {
     const text = sledges[c.matchId];
     if (!text) continue; // no cached sledge yet → nothing to show
+    const pens = c.penalties ? ' (pens)' : '';
+    const line = `${c.winnerName} ${c.winnerScore}–${c.loserScore} ${c.loserName}${pens}`;
     events.push({
       type: 'sledge', window: 'post', matchId: c.matchId, at: c.at,
       emoji: c.loserEliminated ? '💀' : '🗣️',
       headline: c.loserEliminated
-        ? `${c.winnerFriend} knocks ${c.loserFriend} out — ${c.winnerName} ${c.winnerScore}–${c.loserScore} ${c.loserName}`
-        : `${c.winnerFriend} downs ${c.loserFriend} — ${c.winnerName} ${c.winnerScore}–${c.loserScore} ${c.loserName}`,
+        ? `${c.winnerFriend} knocks ${c.loserFriend} out — ${line}`
+        : `${c.winnerFriend} downs ${c.loserFriend} — ${line}`,
       detail: text,
     });
   }

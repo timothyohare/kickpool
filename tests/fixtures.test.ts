@@ -45,6 +45,6 @@ describe('FIXTURE_SCENARIO=live', () => {
     const matches = await fetchTodaysMatches();
     const live = matches.find((m) => m.status === 'STATUS_IN_PROGRESS');
     expect(live).toBeDefined();
-    expect(live!.score).toEqual({ home: 1, away: 0 });
+    expect(live!.score).toMatchObject({ home: 1, away: 0 });
   });
 });

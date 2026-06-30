@@ -46,9 +46,9 @@ async function callClaude(c: SledgeCandidate): Promise<string> {
   const prompt = `You are the group-chat wit for 8 Australian mates running a World Cup 2026 sweepstake.
 Write ONE short, friendly sledge (max 20 words) ribbing the LOSING mate about this result. Warm banter between friends, never mean or offensive. Mention the friends by name. Return ONLY the line, no quotes, no preamble.
 
-Result: ${c.winnerFriend}'s ${c.winnerName} beat ${c.loserFriend}'s ${c.loserName} ${c.winnerScore}–${c.loserScore}.${
-    c.loserEliminated ? ` This knocked ${c.loserFriend}'s last team out of the tournament.` : ''
-}`;
+Result: ${c.winnerFriend}'s ${c.winnerName} beat ${c.loserFriend}'s ${c.loserName} ${c.winnerScore}–${c.loserScore}${
+    c.penalties ? ' on penalties after a 1–1 draw' : ''
+}.${c.loserEliminated ? ` This knocked ${c.loserFriend}'s last team out of the tournament.` : ''}`;
 
   const res = await client.messages.create({
     model: 'claude-sonnet-4-6',
