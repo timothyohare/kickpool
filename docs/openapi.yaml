@@ -1,0 +1,194 @@
+# Contract of record for gate-fuzz (CHG-0026). Schemathesis fuzzes this
+# document against the app booted with perfEnv (USE_FIXTURES=1, MOCK_LLM=1,
+# no live network).
+#
+# Scope: /api/agents/match-pulse is intentionally excluded. It calls the
+# Anthropic SDK directly (lib/claude/agents/match-pulse.ts) with no MOCK_LLM
+# short-circuit, unlike lib/claude/predict.ts — fuzzing it would either make
+# live network calls or fail on the resulting 500s. Add it once that route
+# gets the same mock support as /api/predict.
+openapi: 3.0.3
+info:
+  title: kickpool gate API
+  description: Read/predict path served under USE_FIXTURES=1, MOCK_LLM=1 (see perfEnv in .claude/harness.json).
+  version: "1.0.0"
+paths:
+  /api/health:
+    get:
+      operationId: health
+      responses:
+        "200":
+          description: Liveness check plus which API keys are configured.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, env]
+                properties:
+                  ok:
+                    type: boolean
+                  env:
+                    type: object
+                    additionalProperties: true
+  /api/standings:
+    get:
+      operationId: standings
+      responses:
+        "200":
+          description: Group standings.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [groups, lastUpdated]
+                properties:
+                  groups:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  lastUpdated:
+                    type: string
+        "503":
+          description: Upstream fetch failed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error:
+                    type: string
+  /api/fixtures:
+    get:
+      operationId: fixtures
+      parameters:
+        - name: today
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: group
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: friend
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Fixture list, optionally filtered.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [matches, lastUpdated]
+                properties:
+                  matches:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  lastUpdated:
+                    type: string
+        "503":
+          description: Upstream fetch failed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error:
+                    type: string
+  /api/predict:
+    get:
+      operationId: getPrediction
+      parameters:
+        - name: matchId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cached prediction for the match, or null if absent/matchId omitted.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [prediction]
+                properties:
+                  prediction:
+                    nullable: true
+                    type: object
+                    additionalProperties: true
+    post:
+      operationId: createPrediction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [matchId]
+              properties:
+                matchId:
+                  type: string
+      responses:
+        "200":
+          description: Prediction (freshly generated or cached).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [prediction]
+                properties:
+                  prediction:
+                    type: object
+                    additionalProperties: true
+                  cached:
+                    type: boolean
+        "400":
+          description: matchId missing from the request body.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error:
+                    type: string
+        "404":
+          description: matchId does not resolve to a known match.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error:
+                    type: string
+        "500":
+          description: Prediction generation failed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error:
+                    type: string
+        "503":
+          description: ANTHROPIC_API_KEY not configured.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error:
+                    type: string

@@ -54,4 +54,24 @@ describe('generateSledge (MOCK_LLM)', () => {
     const a: Sledge = await generateSledge(candidate);
     expect(a.text.toLowerCase()).toMatch(/out|home|packing|sent/);
   });
+
+  // mockSledge picks between two canned lines per pool via matchId-seeded modulo — cover both
+  // pools' both entries so every template string (and the loserEliminated branch itself) is
+  // actually asserted on, not just incidentally executed.
+  it('picks the other knockout-pool line for a differently-seeded matchId', async () => {
+    const a = await generateSledge({ ...candidate, matchId: 'k2' });
+    expect(a.text).toContain('is OUT');
+  });
+
+  it('references the score, not the knockout, when the loser survives', async () => {
+    const a = await generateSledge({ ...candidate, matchId: 'k2', loserEliminated: false });
+    expect(a.text).toContain('bags the bragging rights');
+    expect(a.text.toLowerCase()).not.toMatch(/is out|sent you home|proud campaign/);
+  });
+
+  it('picks the other survives-pool line for a differently-seeded matchId', async () => {
+    const a = await generateSledge({ ...candidate, matchId: 'k3', loserEliminated: false });
+    expect(a.text).toContain('no answer');
+    expect(a.text).toContain('drawing board');
+  });
 });

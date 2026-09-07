@@ -34,5 +34,15 @@
     "MOCK_LLM": "1",
     "ANTHROPIC_API_KEY": "perf-mock-key",
     "DYNAMODB_ENDPOINT": ""
+  },
+  "mutation": "npx stryker run",
+  "mutationReport": "reports/mutation/mutation.json",
+  "fuzzSchema": "docs/openapi.yaml",
+  "fuzzEnv": {
+    "PORT": "3100",
+    "USE_FIXTURES": "1",
+    "MOCK_LLM": "1",
+    "ANTHROPIC_API_KEY": "perf-mock-key",
+    "DYNAMODB_ENDPOINT": ""
   }
 }

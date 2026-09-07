@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Generated coverage reports (already git-ignored) — not ours to lint.
     "coverage/**",
+    // StrykerJS mutation-testing sandbox copies (already git-ignored) — not ours to lint.
+    ".stryker-tmp/**",
   ]),
 ]);
 
