@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   env: {
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? '',
     TAVILY_API_KEY: process.env.TAVILY_API_KEY ?? '',
+    // LLM inference is OFF unless this is exactly '1' (see lib/claude/enabled.ts).
+    // Unset in the Amplify console → no live Anthropic calls, no spend.
+    KICKPOOL_LLM: process.env.KICKPOOL_LLM ?? '',
   },
   images: {
     remotePatterns: [

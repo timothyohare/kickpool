@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { llmEnabled } from './enabled';
 import type { Match, Prediction } from '@/types';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -9,7 +10,8 @@ function stripMarkdown(text: string): string {
   return text.replace(/^```json\s*/m, '').replace(/^```\s*/m, '').replace(/```$/m, '').trim();
 }
 
-// Deterministic, free prediction for local dev / CI (MOCK_LLM=1). An optional
+// Deterministic, free prediction — the default path (see lib/claude/enabled.ts)
+// and also used for local dev / CI (MOCK_LLM=1). An optional
 // fixtures/llm/<matchId>.json overrides the generated value for hand-crafted cases.
 function goldenPrediction(match: Match): Prediction {
   const file = join(process.cwd(), 'fixtures', 'llm', `${match.id}.json`);
@@ -34,7 +36,7 @@ function goldenPrediction(match: Match): Prediction {
 }
 
 export async function generatePrediction(match: Match): Promise<Prediction> {
-  if (process.env.MOCK_LLM === '1') return goldenPrediction(match);
+  if (!llmEnabled()) return goldenPrediction(match);
 
   const prompt = `You are a football analyst predicting a 2026 FIFA World Cup match. Respond with ONLY valid JSON (no markdown fences).
 

@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { llmEnabled } from '@/lib/claude/enabled';
 import type { SledgeCandidate } from '@/lib/data/drama';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -26,8 +27,9 @@ function safeFallback(c: SledgeCandidate): string {
     : `${c.winnerFriend}'s ${c.winnerName} got the better of ${c.loserFriend}'s ${c.loserName}.`;
 }
 
-// Deterministic stand-in for local dev / CI (MOCK_LLM=1). Seeded from the match id so the same
-// game always yields the same line, keeping tests reproducible.
+// Deterministic stand-in — the default path (see lib/claude/enabled.ts) and also used for
+// local dev / CI (MOCK_LLM=1). Seeded from the match id so the same game always yields the
+// same line, keeping tests reproducible.
 function mockSledge(c: SledgeCandidate): string {
   const pool = c.loserEliminated
     ? [
@@ -62,7 +64,7 @@ export async function generateSledge(c: SledgeCandidate): Promise<Sledge> {
   const fallback = safeFallback(c);
   let raw: string;
   try {
-    raw = process.env.MOCK_LLM === '1' ? mockSledge(c) : await callClaude(c);
+    raw = llmEnabled() ? await callClaude(c) : mockSledge(c);
   } catch {
     raw = '';
   }
