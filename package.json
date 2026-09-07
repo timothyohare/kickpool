@@ -29,14 +29,15 @@
     "@tanstack/react-query": "^5.101.0",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
-    "next": "16.2.7",
+    "next": "16.3.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zustand": "^5.0.14"
   },
   "overrides": {
-    "undici": "^7.28.0",
-    "postcss": "^8.5.10"
+    "undici": "^7.29.0",
+    "postcss": "^8.5.26",
+    "qs": "^6.15.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
@@ -53,7 +54,7 @@
     "@vitejs/plugin-react": "^5.2.0",
     "@vitest/coverage-v8": "^4.1.8",
     "eslint": "^9",
-    "eslint-config-next": "16.2.7",
+    "eslint-config-next": "16.3.4",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
